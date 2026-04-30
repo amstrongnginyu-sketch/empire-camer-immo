@@ -92,7 +92,36 @@ useEffect(() => {
   const [surface, setSurface] = useState("");
   const [landSurface, setLandSurface] = useState("");
   const [mapAddress, setMapAddress] = useState("");
+const appelerVendeur = (phone: string) => {
+  if (!phone) return alert("Numéro non disponible");
+  Linking.openURL(`tel:${phone}`);
+};
 
+const whatsappVendeur = (phone: string, annonce: any = selectedAnnonce) => {
+  if (!phone) return alert("Numéro WhatsApp non disponible");
+  if (!annonce) return alert("Annonce non disponible");
+
+  const clean = phone.replace(/\D/g, "");
+
+  const message = `Bonjour,
+
+Je suis intéressé par ce bien sur Empire Camer Immo :
+
+- Titre : ${annonce.title || "Bien immobilier"}
+- Prix : ${formatFCFA(annonce.price)} FCFA
+- Ville : ${annonce.city || "-"} - ${annonce.quartier || "-"}
+- Type : ${annonce.type || "-"}
+
+- Chambres : ${annonce.bedrooms || "-"}
+- Douches : ${annonce.bathrooms || "-"}
+- Surface : ${annonce.surface || "-"} m²
+
+Est-ce toujours disponible ?
+
+Merci`;
+
+  Linking.openURL(`https://wa.me/${clean}?text=${encodeURIComponent(message)}`);
+};
   const [filterPurpose, setFilterPurpose] = useState("");
   const [filterCity, setFilterCity] = useState("");
   const [filterQuartier, setFilterQuartier] = useState("");
@@ -138,10 +167,8 @@ useEffect(() => {
         <Text style={styles.specLine}>
           🛏 {item.bedrooms || "-"} • 🛁 {item.bathrooms || "-"} • {item.surface || "-"} m²
         </Text>
-
         <Text style={styles.sectionTitle}>Description</Text>
         <Text>{item.description || "Aucune description"}</Text>
-
         <Text style={styles.sectionTitle}>Contact</Text>
         <Text>Vendeur : {item.sellerName || "Non renseigné"}</Text>
         <Text>Téléphone : {item.sellerPhone || "Non renseigné"}</Text>
@@ -196,6 +223,16 @@ if (selectedAnnonce) {
         <Text style={styles.sectionTitle}>Contact</Text>
         <Text>Vendeur : {item.sellerName || "Non renseigné"}</Text>
         <Text>Téléphone : {item.sellerPhone || "Non renseigné"}</Text>
+        <Pressable onPress={() => appelerVendeur(item.sellerPhone)}>
+  <Text style={{ color: "green", marginTop: 10 }}>
+    📞 Appeler
+  </Text>
+</Pressable>
+<Pressable onPress={() => whatsappVendeur(item.sellerPhone)}>
+  <Text style={{ color: "green", marginTop: 10 }}>
+    💬 WhatsApp
+  </Text>
+</Pressable>
       </View>
     </ScrollView>
   );
@@ -418,14 +455,6 @@ if (!isLoggedIn) {
   );
 }
 
-  <Pressable onPress={() => setIsRegister(!isRegister)}>
-    <Text style={{ textAlign: "center", marginTop: 10, color: "#666" }}>
-      {isRegister
-        ? "Déjà un compte ? Se connecter"
-        : "Pas encore de compte ? Créer un compte"}
-    </Text>
-  </Pressable>
-  
 if (selectedAnnonce) {
   const item = selectedAnnonce;
 
