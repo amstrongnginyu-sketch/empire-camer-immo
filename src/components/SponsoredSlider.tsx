@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { PropertyCard } from "./PropertyCard";
 
 type Props = {
@@ -12,6 +12,13 @@ export function SponsoredSlider({
   onOpenProperty,
   onBoostProperty,
 }: Props) {
+  const { width } = useWindowDimensions();
+
+  const isPhone = width < 600;
+  const isTablet = width >= 600 && width < 1024;
+
+  const cardWidth = isPhone ? width - 42 : isTablet ? 520 : 700;
+
   if (!items || items.length === 0) {
     return (
       <View style={styles.emptyBox}>
@@ -27,9 +34,10 @@ export function SponsoredSlider({
       contentContainerStyle={styles.slider}
     >
       {items.map((item) => (
-        <View key={item.id} style={styles.cardWrap}>
+        <View key={item.id} style={[styles.cardWrap, { width: cardWidth }]}>
           <PropertyCard
             item={item}
+            compact={false}
             onPress={() => onOpenProperty(item)}
             onBoost={() => onBoostProperty?.(item)}
           />
@@ -43,10 +51,11 @@ const styles = StyleSheet.create({
   slider: {
     gap: 16,
     paddingBottom: 18,
+    paddingRight: 16,
   },
 
   cardWrap: {
-    width: 560,
+    flexShrink: 0,
   },
 
   emptyBox: {

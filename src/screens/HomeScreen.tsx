@@ -11,9 +11,8 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { SecurityNotice } from "../components/SecurityNotice";
-
 import { PropertyCard } from "../components/PropertyCard";
+import { SecurityNotice } from "../components/SecurityNotice";
 import { SponsoredSlider } from "../components/SponsoredSlider";
 import { useProperties } from "../hooks/useProperties";
 import { UserProfile } from "../types/user";
@@ -108,15 +107,19 @@ export function HomeScreen({
   boostedIds = [],
 }: Props) {
   const { width } = useWindowDimensions();
-  const isMobile = width < 760;
+
+  const isPhone = width < 600;
+  const isTablet = width >= 600 && width < 1024;
+
+  const columns = width < 600 ? 1 : width < 1024 ? 2 : width < 1440 ? 3 : 4;
+  const gap = isPhone ? 12 : 16;
+  const pagePadding = isPhone ? 8 : isTablet ? 14 : 16;
+  const cardWidth = columns === 1 ? "100%" : `${(100 - (columns - 1) * 2) / columns}%`;
 
   const { recentProperties = [], popularProperties = [] } = useProperties(true);
 
   const [search, setSearch] = useState("");
-  const [selectedPurpose, setSelectedPurpose] = useState<
-    "Vente" | "Location" | "Terrain"
-  >("Vente");
-
+  const [selectedPurpose, setSelectedPurpose] = useState<"Vente" | "Location" | "Terrain">("Vente");
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
@@ -151,13 +154,6 @@ export function HomeScreen({
     return Number.isNaN(number) ? 0 : number;
   }
 
-  function getCardWidth() {
-    if (width < 650) return "100%";
-    if (width < 1000) return "48%";
-    if (width < 1450) return "31.8%";
-    return "23.7%";
-  }
-
   const firebaseProperties = useMemo(() => {
     const map = new Map<string, PropertyLike>();
 
@@ -169,8 +165,7 @@ export function HomeScreen({
   }, [popularProperties, recentProperties]);
 
   const allProperties = useMemo(() => {
-    const source =
-      firebaseProperties.length > 0 ? firebaseProperties : DEMO_PROPERTIES;
+    const source = firebaseProperties.length > 0 ? firebaseProperties : DEMO_PROPERTIES;
 
     return source
       .map((item) => ({
@@ -217,9 +212,7 @@ export function HomeScreen({
 
   const filteredProperties = useMemo(() => {
     return allProperties.filter((item) => {
-      const text = `${item.title || ""} ${item.city || ""} ${
-        item.quartier || ""
-      } ${item.type || ""}`.toLowerCase();
+      const text = `${item.title || ""} ${item.city || ""} ${item.quartier || ""} ${item.type || ""}`.toLowerCase();
 
       const price = toNumber(item.price);
       const surface = toNumber(item.surface);
@@ -229,20 +222,14 @@ export function HomeScreen({
       const matchCity = selectedCity
         ? normalizeText(item.city || "") === selectedCity
         : filterCity
-        ? String(item.city || "")
-            .toLowerCase()
-            .includes(filterCity.toLowerCase())
+        ? String(item.city || "").toLowerCase().includes(filterCity.toLowerCase())
         : true;
 
       const matchQuartier = filterQuartier
-        ? String(item.quartier || "")
-            .toLowerCase()
-            .includes(filterQuartier.toLowerCase())
+        ? String(item.quartier || "").toLowerCase().includes(filterQuartier.toLowerCase())
         : true;
 
-      const matchType = selectedType
-        ? normalizeText(item.type || "") === selectedType
-        : true;
+      const matchType = selectedType ? normalizeText(item.type || "") === selectedType : true;
 
       const matchPurpose =
         selectedPurpose === "Terrain"
@@ -306,11 +293,12 @@ export function HomeScreen({
 
   function renderGrid(items: PropertyLike[]) {
     return (
-      <View style={styles.grid}>
+      <View style={[styles.grid, { gap }]}>
         {items.map((item) => (
-          <View key={item.id} style={[styles.gridItem, { width: getCardWidth() }]}>
+          <View key={item.id} style={[styles.gridItem, { width: cardWidth as any }]}>
             <PropertyCard
               item={item}
+              compact={false}
               onPress={() => onOpenProperty(item)}
               onBoost={() => onBoostProperty?.(item)}
             />
@@ -325,25 +313,30 @@ export function HomeScreen({
 
   return (
     <LinearGradient colors={["#FFFFFF", "#F7F8F6", "#EEF2F0"]} style={styles.bg}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={[styles.container, { padding: pagePadding }]}
+        showsVerticalScrollIndicator={false}
+      >
         <ImageBackground
           source={{ uri: HERO_IMAGES[heroIndex] }}
-          style={styles.hero}
-          imageStyle={styles.heroImage}
+          style={[styles.hero, isPhone && styles.heroMobile]}
+          imageStyle={[styles.heroImage, isPhone && styles.heroImageMobile]}
         >
-          <View style={styles.heroOverlay}>
+          <View style={[styles.heroOverlay, isPhone && styles.heroOverlayMobile]}>
             <View style={styles.heroContent}>
-              <Text style={styles.kicker}>EMPIRE CAMER IMMO</Text>
+              <Text style={[styles.kicker, isPhone && styles.kickerMobile]}>
+                EMPIRE CAMER IMMO
+              </Text>
 
-              <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile]}>
+              <Text style={[styles.heroTitle, isPhone && styles.heroTitleMobile]}>
                 Trouve le bien idéal au Cameroun
               </Text>
 
-              <Text style={styles.heroSubtitle}>
+              <Text style={[styles.heroSubtitle, isPhone && styles.heroSubtitleMobile]}>
                 Villas, appartements, terrains et immeubles vérifiés • Contact direct vendeur
               </Text>
 
-              <View style={styles.searchPanel}>
+              <View style={[styles.searchPanel, isPhone && styles.searchPanelMobile]}>
                 <View style={styles.segmentRow}>
                   {["Vente", "Location", "Terrain"].map((item) => {
                     const active = selectedPurpose === item;
@@ -351,63 +344,45 @@ export function HomeScreen({
                     return (
                       <Pressable
                         key={item}
-                        style={[styles.segment, active && styles.segmentActive]}
+                        style={[styles.segment, isPhone && styles.segmentMobile, active && styles.segmentActive]}
                         onPress={() => setSelectedPurpose(item as any)}
                       >
-                        <Text
-                          style={[
-                            styles.segmentText,
-                            active && styles.segmentTextActive,
-                          ]}
-                        >
-                          {item === "Vente"
-                            ? "Acheter"
-                            : item === "Location"
-                            ? "Louer"
-                            : "Terrains"}
+                        <Text style={[styles.segmentText, isPhone && styles.segmentTextMobile, active && styles.segmentTextActive]}>
+                          {item === "Vente" ? "Acheter" : item === "Location" ? "Louer" : "Terrains"}
                         </Text>
                       </Pressable>
                     );
                   })}
 
                   <Pressable
-                    style={[
-                      styles.filterButton,
-                      hasAdvancedFilter && styles.filterButtonActive,
-                    ]}
+                    style={[styles.filterButton, isPhone && styles.filterButtonMobile, hasAdvancedFilter && styles.filterButtonActive]}
                     onPress={() => setFilterOpen(true)}
                   >
-                    <Text
-                      style={[
-                        styles.filterButtonText,
-                        hasAdvancedFilter && styles.filterButtonTextActive,
-                      ]}
-                    >
+                    <Text style={[styles.filterButtonText, isPhone && styles.filterButtonTextMobile, hasAdvancedFilter && styles.filterButtonTextActive]}>
                       Filtres ⚙️
                     </Text>
                   </Pressable>
                 </View>
 
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, isPhone && styles.searchInputMobile]}
                   placeholder="Ville, quartier, type de bien..."
                   placeholderTextColor="#6B6B5F"
                   value={search}
                   onChangeText={setSearch}
                 />
 
-                <View
-                  style={[
-                    styles.searchActions,
-                    isMobile && styles.searchActionsMobile,
-                  ]}
-                >
-                  <Pressable style={styles.searchButton}>
-                    <Text style={styles.searchButtonText}>Rechercher</Text>
+                <View style={[styles.searchActions, isPhone && styles.searchActionsMobile]}>
+                  <Pressable style={[styles.searchButton, isPhone && styles.searchButtonMobile]}>
+                    <Text style={[styles.searchButtonText, isPhone && styles.buttonTextMobile]}>
+                      Rechercher
+                    </Text>
                   </Pressable>
 
-                  <Pressable style={styles.publishButton} onPress={handlePublish}>
-                    <Text style={styles.publishText}>Publier une annonce</Text>
+                  <Pressable style={[styles.publishButton, isPhone && styles.publishButtonMobile]} onPress={handlePublish}>
+                    <Text style={[styles.publishText, isPhone && styles.buttonTextMobile]}>
+                      Publier
+                    </Text>
                   </Pressable>
                 </View>
               </View>
@@ -415,21 +390,23 @@ export function HomeScreen({
           </View>
         </ImageBackground>
 
-        <View style={styles.adBanner}>
-          <View>
+        <View style={[styles.adBanner, isPhone && styles.adBannerMobile]}>
+          <View style={styles.adContent}>
             <Text style={styles.adLabel}>{activeAd.label}</Text>
-            <Text style={styles.adTitle}>{activeAd.title}</Text>
-            <Text style={styles.adText}>{activeAd.text}</Text>
+            <Text style={[styles.adTitle, isPhone && styles.adTitleMobile]}>{activeAd.title}</Text>
+            <Text style={[styles.adText, isPhone && styles.adTextMobile]}>{activeAd.text}</Text>
           </View>
 
-          <Pressable style={styles.adButton}>
+          <Pressable style={[styles.adButton, isPhone && styles.adButtonMobile]}>
             <Text style={styles.adButtonText}>Réserver</Text>
           </Pressable>
         </View>
 
         <View style={styles.statsContainer}>
-          <View style={styles.statsHeader}>
-            <Text style={styles.statsTitle}>Biens disponibles par ville</Text>
+          <View style={[styles.statsHeader, isPhone && styles.statsHeaderMobile]}>
+            <Text style={[styles.statsTitle, isPhone && styles.statsTitleMobile]}>
+              Biens disponibles par ville
+            </Text>
 
             {hasFilter && (
               <Pressable onPress={clearFilters}>
@@ -446,12 +423,7 @@ export function HomeScreen({
                   setSelectedType(null);
                 }}
               >
-                <Text
-                  style={[
-                    styles.cityTitle,
-                    selectedCity === city && styles.activeCityTitle,
-                  ]}
-                >
+                <Text style={[styles.cityTitle, selectedCity === city && styles.activeCityTitle]}>
                   {city}
                 </Text>
               </Pressable>
@@ -471,12 +443,7 @@ export function HomeScreen({
                           setSelectedType(type);
                         }}
                       >
-                        <Text
-                          style={[
-                            styles.statChipText,
-                            active && styles.activeChipText,
-                          ]}
-                        >
+                        <Text style={[styles.statChipText, active && styles.activeChipText]}>
                           {type} ({count})
                         </Text>
                       </Pressable>
@@ -488,60 +455,48 @@ export function HomeScreen({
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>💎 Biens sponsorisés</Text>
-          <Text style={styles.sectionSub}>
-            Les annonces boostées apparaissent ici en priorité
+          <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleMobile]}>
+            💎 Biens sponsorisés
           </Text>
+          <Text style={styles.sectionSub}>Les annonces boostées apparaissent ici en priorité</Text>
         </View>
 
         <SponsoredSlider
-  items={sponsoredProperties}
-  onOpenProperty={onOpenProperty}
-  onBoostProperty={onBoostProperty}
-/>
+          items={sponsoredProperties}
+          onOpenProperty={onOpenProperty}
+          onBoostProperty={onBoostProperty}
+        />
 
         {hasFilter ? (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Résultats</Text>
-              <Text style={styles.sectionSub}>
-                Les biens boostés restent affichés en premier
+              <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleMobile]}>
+                Résultats
               </Text>
+              <Text style={styles.sectionSub}>Les biens boostés restent affichés en premier</Text>
             </View>
 
-            {filteredProperties.length > 0 ? (
-              renderGrid(filteredProperties)
-            ) : (
-              <Text style={styles.empty}>Aucun bien trouvé.</Text>
-            )}
+            {filteredProperties.length > 0 ? renderGrid(filteredProperties) : <Text style={styles.empty}>Aucun bien trouvé.</Text>}
           </>
         ) : (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🔥 Biens boostés</Text>
-              <Text style={styles.sectionSub}>
-                Visibilité premium pour les annonces sponsorisées
+              <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleMobile]}>
+                🔥 Biens boostés
               </Text>
+              <Text style={styles.sectionSub}>Visibilité premium pour les annonces sponsorisées</Text>
             </View>
 
-            {boostedProperties.length > 0 ? (
-              renderGrid(boostedProperties)
-            ) : (
-              <Text style={styles.empty}>Aucun bien boosté pour le moment.</Text>
-            )}
+            {boostedProperties.length > 0 ? renderGrid(boostedProperties) : <Text style={styles.empty}>Aucun bien boosté pour le moment.</Text>}
 
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🆕 Annonces récentes</Text>
-              <Text style={styles.sectionSub}>
-                Les annonces premium sont toujours prioritaires
+              <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleMobile]}>
+                🆕 Annonces récentes
               </Text>
+              <Text style={styles.sectionSub}>Les annonces premium sont toujours prioritaires</Text>
             </View>
 
-            {allProperties.length > 0 ? (
-              renderGrid(allProperties)
-            ) : (
-              <Text style={styles.empty}>Aucune annonce disponible.</Text>
-            )}
+            {allProperties.length > 0 ? renderGrid(allProperties) : <Text style={styles.empty}>Aucune annonce disponible.</Text>}
           </>
         )}
 
@@ -550,9 +505,11 @@ export function HomeScreen({
 
       <Modal visible={filterOpen} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.filterModal}>
+          <View style={[styles.filterModal, isPhone && styles.filterModalMobile]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filtres avancés</Text>
+              <Text style={[styles.modalTitle, isPhone && styles.modalTitleMobile]}>
+                Filtres avancés
+              </Text>
 
               <Pressable onPress={() => setFilterOpen(false)}>
                 <Text style={styles.closeText}>×</Text>
@@ -563,59 +520,22 @@ export function HomeScreen({
               Affine ta recherche par ville, quartier, prix et surface.
             </Text>
 
-            <View style={styles.modalRow}>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Ville"
-                value={filterCity}
-                onChangeText={setFilterCity}
-              />
-
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Quartier"
-                value={filterQuartier}
-                onChangeText={setFilterQuartier}
-              />
+            <View style={[styles.modalRow, isPhone && styles.modalRowMobile]}>
+              <TextInput style={styles.modalInput} placeholder="Ville" value={filterCity} onChangeText={setFilterCity} />
+              <TextInput style={styles.modalInput} placeholder="Quartier" value={filterQuartier} onChangeText={setFilterQuartier} />
             </View>
 
-            <View style={styles.modalRow}>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Prix minimum"
-                value={filterMinPrice}
-                onChangeText={setFilterMinPrice}
-                keyboardType="numeric"
-              />
-
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Prix maximum"
-                value={filterMaxPrice}
-                onChangeText={setFilterMaxPrice}
-                keyboardType="numeric"
-              />
+            <View style={[styles.modalRow, isPhone && styles.modalRowMobile]}>
+              <TextInput style={styles.modalInput} placeholder="Prix minimum" value={filterMinPrice} onChangeText={setFilterMinPrice} keyboardType="numeric" />
+              <TextInput style={styles.modalInput} placeholder="Prix maximum" value={filterMaxPrice} onChangeText={setFilterMaxPrice} keyboardType="numeric" />
             </View>
 
-            <View style={styles.modalRow}>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="M² minimum"
-                value={filterMinSurface}
-                onChangeText={setFilterMinSurface}
-                keyboardType="numeric"
-              />
-
-              <TextInput
-                style={styles.modalInput}
-                placeholder="M² maximum"
-                value={filterMaxSurface}
-                onChangeText={setFilterMaxSurface}
-                keyboardType="numeric"
-              />
+            <View style={[styles.modalRow, isPhone && styles.modalRowMobile]}>
+              <TextInput style={styles.modalInput} placeholder="M² minimum" value={filterMinSurface} onChangeText={setFilterMinSurface} keyboardType="numeric" />
+              <TextInput style={styles.modalInput} placeholder="M² maximum" value={filterMaxSurface} onChangeText={setFilterMaxSurface} keyboardType="numeric" />
             </View>
 
-            <View style={styles.modalActions}>
+            <View style={[styles.modalActions, isPhone && styles.modalActionsMobile]}>
               <Pressable style={styles.resetButton} onPress={clearFilters}>
                 <Text style={styles.resetText}>Réinitialiser</Text>
               </Pressable>
@@ -633,29 +553,50 @@ export function HomeScreen({
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  container: { flex: 1, backgroundColor: "transparent", padding: 16 },
+  container: { flex: 1, backgroundColor: "transparent" },
+
   hero: { minHeight: 520, borderRadius: 32, overflow: "hidden", marginBottom: 22 },
+  heroMobile: { minHeight: 420, borderRadius: 22, marginBottom: 14 },
+
   heroImage: { borderRadius: 32 },
+  heroImageMobile: { borderRadius: 22 },
+
   heroOverlay: {
     flex: 1,
     backgroundColor: "rgba(6,37,26,0.58)",
     padding: 32,
     justifyContent: "center",
   },
+  heroOverlayMobile: {
+    padding: 14,
+    justifyContent: "flex-start",
+  },
+
   heroContent: { maxWidth: 860 },
+
   kicker: {
     color: "#F0D77A",
     fontSize: 18,
     fontWeight: "900",
     marginBottom: 14,
   },
+  kickerMobile: {
+    fontSize: 13,
+    marginBottom: 8,
+    marginTop: 8,
+  },
+
   heroTitle: {
     color: "white",
     fontSize: 42,
     lineHeight: 48,
     fontWeight: "900",
   },
-  heroTitleMobile: { fontSize: 30, lineHeight: 36 },
+  heroTitleMobile: {
+    fontSize: 24,
+    lineHeight: 29,
+  },
+
   heroSubtitle: {
     color: "rgba(255,255,255,0.9)",
     fontSize: 18,
@@ -663,6 +604,12 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontWeight: "700",
   },
+  heroSubtitleMobile: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 8,
+  },
+
   searchPanel: {
     backgroundColor: "rgba(255,255,255,0.86)",
     borderRadius: 26,
@@ -672,20 +619,41 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.7)",
   },
-  segmentRow: { flexDirection: "row", gap: 10, marginBottom: 14, flexWrap: "wrap" },
+  searchPanelMobile: {
+    padding: 12,
+    borderRadius: 18,
+    marginTop: 18,
+  },
+
+  segmentRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+    flexWrap: "wrap",
+  },
+
   segment: {
     backgroundColor: "rgba(245,246,245,0.92)",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 14,
   },
+  segmentMobile: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+
   segmentActive: {
     backgroundColor: "rgba(234,244,239,0.95)",
     borderWidth: 1,
     borderColor: "#1F5C42",
   },
+
   segmentText: { color: "#1D2E26", fontWeight: "900" },
+  segmentTextMobile: { fontSize: 12 },
   segmentTextActive: { color: "#1F5C42" },
+
   filterButton: {
     backgroundColor: "rgba(255,255,255,0.95)",
     paddingVertical: 10,
@@ -694,9 +662,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EAE6",
   },
+  filterButtonMobile: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+
   filterButtonActive: { borderColor: "#1F5C42", backgroundColor: "#EAF4EF" },
   filterButtonText: { color: "#1D2E26", fontWeight: "900" },
+  filterButtonTextMobile: { fontSize: 12 },
   filterButtonTextActive: { color: "#1F5C42" },
+
   searchInput: {
     backgroundColor: "rgba(255,255,255,0.94)",
     borderWidth: 1,
@@ -706,8 +682,19 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 16,
   },
+  searchInputMobile: {
+    borderRadius: 16,
+    padding: 13,
+    fontSize: 14,
+  },
+
   searchActions: { flexDirection: "row", gap: 12, marginTop: 14 },
-  searchActionsMobile: { flexDirection: "column" },
+  searchActionsMobile: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+
   searchButton: {
     flex: 1,
     backgroundColor: "#1F5C42",
@@ -715,7 +702,13 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
   },
+  searchButtonMobile: {
+    padding: 13,
+    borderRadius: 14,
+  },
+
   searchButtonText: { color: "white", fontWeight: "900" },
+
   publishButton: {
     flex: 1,
     backgroundColor: "#F0D77A",
@@ -723,7 +716,14 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
   },
+  publishButtonMobile: {
+    padding: 13,
+    borderRadius: 14,
+  },
+
   publishText: { color: "#06251A", fontWeight: "900" },
+  buttonTextMobile: { fontSize: 12 },
+
   adBanner: {
     backgroundColor: "#1F5C42",
     borderRadius: 26,
@@ -733,63 +733,102 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  adBannerMobile: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 10,
+    padding: 16,
+    borderRadius: 22,
+    marginBottom: 14,
+  },
+
+  adContent: { flex: 1 },
   adLabel: { color: "#F0D77A", fontSize: 12, fontWeight: "900", marginBottom: 6 },
   adTitle: { color: "white", fontSize: 24, fontWeight: "900" },
+  adTitleMobile: { fontSize: 18 },
   adText: { color: "rgba(255,255,255,0.86)", marginTop: 5, fontWeight: "700" },
+  adTextMobile: { fontSize: 13 },
+
   adButton: {
     backgroundColor: "white",
     paddingVertical: 13,
     paddingHorizontal: 22,
     borderRadius: 16,
   },
+  adButtonMobile: { alignItems: "center", paddingVertical: 12 },
   adButtonText: { color: "#1F5C42", fontWeight: "900" },
+
   statsContainer: {
     backgroundColor: "rgba(255,255,255,0.78)",
-    padding: 20,
-    borderRadius: 26,
-    marginBottom: 24,
+    padding: 16,
+    borderRadius: 24,
+    marginBottom: 22,
     borderWidth: 1,
     borderColor: "rgba(227,234,230,0.95)",
   },
-  statsHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 14 },
+
+  statsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 14,
+    gap: 12,
+  },
+  statsHeaderMobile: { flexDirection: "column" },
+
   statsTitle: { fontSize: 22, fontWeight: "900", color: "#06251A" },
+  statsTitleMobile: { fontSize: 19 },
+
   clearText: { color: "#1F5C42", fontWeight: "900" },
+
   cityCard: {
     backgroundColor: "rgba(246,248,247,0.78)",
-    borderRadius: 20,
-    padding: 17,
-    marginBottom: 12,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "rgba(227,234,230,0.75)",
   },
+
   cityTitle: {
     fontSize: 18,
     color: "#06251A",
     fontWeight: "900",
     marginBottom: 10,
   },
+
   activeCityTitle: { color: "#1F5C42" },
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+
   statChip: {
     backgroundColor: "rgba(255,255,255,0.92)",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 9,
+    paddingHorizontal: 13,
     borderRadius: 999,
   },
+
   activeChip: { backgroundColor: "#1F5C42" },
   statChipText: { color: "#06251A", fontWeight: "900" },
   activeChipText: { color: "white" },
+
   sectionHeader: { marginTop: 6, marginBottom: 14 },
   sectionTitle: { fontSize: 26, fontWeight: "900", color: "#06251A" },
+  sectionTitleMobile: { fontSize: 22 },
   sectionSub: { color: "#51635A", fontWeight: "700", marginTop: 5 },
+
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 16,
     alignItems: "flex-start",
     marginBottom: 22,
   },
-  gridItem: { minWidth: 260 },
+
+  gridItem: { minWidth: 0 },
+
   empty: {
     backgroundColor: "rgba(255,255,255,0.82)",
     padding: 18,
@@ -800,6 +839,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(227,234,230,0.8)",
   },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(6,37,26,0.45)",
@@ -807,6 +847,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 18,
   },
+
   filterModal: {
     width: "100%",
     maxWidth: 720,
@@ -816,11 +857,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EAE6",
   },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  filterModalMobile: {
+    padding: 18,
+    borderRadius: 22,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
   modalTitle: { color: "#06251A", fontSize: 26, fontWeight: "900" },
+  modalTitleMobile: { fontSize: 22 },
+
   closeText: { color: "#A84A3A", fontSize: 32, fontWeight: "900" },
-  modalSub: { color: "#51635A", fontWeight: "700", marginTop: 6, marginBottom: 18 },
-  modalRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
+
+  modalSub: {
+    color: "#51635A",
+    fontWeight: "700",
+    marginTop: 6,
+    marginBottom: 18,
+  },
+
+  modalRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 12,
+  },
+  modalRowMobile: { flexDirection: "column" },
+
   modalInput: {
     flex: 1,
     backgroundColor: "#F7F8F6",
@@ -831,7 +897,14 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#06251A",
   },
-  modalActions: { flexDirection: "row", gap: 12, marginTop: 8 },
+
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  modalActionsMobile: { flexDirection: "column" },
+
   resetButton: {
     flex: 1,
     backgroundColor: "#F7F8F6",
@@ -841,7 +914,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
   },
+
   resetText: { color: "#1F5C42", fontWeight: "900" },
+
   applyButton: {
     flex: 2,
     backgroundColor: "#1F5C42",
@@ -849,5 +924,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
   },
+
   applyText: { color: "white", fontWeight: "900" },
 });

@@ -1,166 +1,346 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 
-import { useProperties } from "../hooks/useProperties";
-
 type Props = {
-  onBack: () => void;
+  properties?: any[];
+  users?: any[];
+  onApproveProperty?: (property: any) => void;
+  onRejectProperty?: (property: any) => void;
+  onDeleteProperty?: (property: any) => void;
 };
 
-export function AdminScreen({ onBack }: Props) {
-  const { recentProperties, popularProperties } = useProperties(false);
+export function AdminScreen({
+  properties = [],
+  users = [],
+  onApproveProperty,
+  onRejectProperty,
+  onDeleteProperty,
+}: Props) {
+  const { width } = useWindowDimensions();
 
-  const [validatedIds, setValidatedIds] = useState<string[]>([]);
-  const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  const isPhone = width < 700;
+  const isTablet = width >= 700 && width < 1100;
 
-  const properties = useMemo(() => {
-    const map = new Map<string, any>();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<
+    "all" | "pending" | "approved" | "rejected"
+  >("all");
 
-    [...recentProperties, ...popularProperties].forEach((item: any) => {
-      if (item?.id && !deletedIds.includes(item.id)) {
-        map.set(item.id, item);
-      }
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
+
+  useEffect(() => {
+    const total = properties.length;
+
+    const pending = properties.filter(
+      (item) => item?.status === "pending"
+    ).length;
+
+    const approved = properties.filter(
+      (item) => item?.status === "approved"
+    ).length;
+
+    const rejected = properties.filter(
+      (item) => item?.status === "rejected"
+    ).length;
+
+    setStats({
+      total,
+      pending,
+      approved,
+      rejected,
     });
+  }, [properties]);
 
-    return Array.from(map.values());
-  }, [recentProperties, popularProperties, deletedIds]);
+  const filteredProperties = useMemo(() => {
+    return properties.filter((item) => {
+      const text = `
+        ${item?.title || ""}
+        ${item?.city || ""}
+        ${item?.quartier || ""}
+        ${item?.sellerName || ""}
+        ${item?.sellerPhone || ""}
+      `.toLowerCase();
 
-  function validateProperty(id: string) {
-    setValidatedIds((current) => [...current, id]);
-    Alert.alert("Annonce validée", "L’annonce est maintenant approuvée.");
-  }
+      const matchSearch = search
+        ? text.includes(search.toLowerCase())
+        : true;
 
-  function deleteProperty(id: string) {
+      const matchFilter =
+        filter === "all" ? true : item?.status === filter;
+
+      return matchSearch && matchFilter;
+    });
+  }, [properties, search, filter]);
+
+  function handleApprove(item: any) {
     Alert.alert(
-      "Supprimer l’annonce",
-      "Cette action va retirer l’annonce de la liste admin.",
+      "Validation",
+      "Valider cette annonce ?",
       [
         { text: "Annuler", style: "cancel" },
         {
-          text: "Supprimer",
-          style: "destructive",
-          onPress: () => setDeletedIds((current) => [...current, id]),
+          text: "Valider",
+          onPress: () => onApproveProperty?.(item),
         },
       ]
     );
   }
 
+  function handleReject(item: any) {
+    Alert.alert(
+      "Refuser",
+      "Refuser cette annonce ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Refuser",
+          style: "destructive",
+          onPress: () => onRejectProperty?.(item),
+        },
+      ]
+    );
+  }
+
+  function handleDelete(item: any) {
+    Alert.alert(
+      "Suppression",
+      "Supprimer définitivement cette annonce ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: () => onDeleteProperty?.(item),
+        },
+      ]
+    );
+  }
+
+  function getStatusStyle(status?: string) {
+    switch (status) {
+      case "approved":
+        return styles.statusApproved;
+
+      case "rejected":
+        return styles.statusRejected;
+
+      default:
+        return styles.statusPending;
+    }
+  }
+
+  function getStatusText(status?: string) {
+    switch (status) {
+      case "approved":
+        return "Validée";
+
+      case "rejected":
+        return "Refusée";
+
+      default:
+        return "En attente";
+    }
+  }
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={onBack}>
-        <Text style={styles.back}>← Retour</Text>
-      </Pressable>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.content,
+        isPhone && styles.contentMobile,
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.header, isPhone && styles.headerMobile]}>
+        <View>
+          <Text style={[styles.title, isPhone && styles.titleMobile]}>
+            Dashboard Admin
+          </Text>
 
-      <View style={styles.header}>
-        <Text style={styles.title}>Dashboard Admin</Text>
-        <Text style={styles.subtitle}>
-          Gérez les annonces, validations et contenus premium.
-        </Text>
-      </View>
-
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <Text style={styles.statValue}>{properties.length}</Text>
-          <Text style={styles.statLabel}>Annonces</Text>
+          <Text style={styles.subtitle}>
+            Gestion des annonces et sécurité plateforme
+          </Text>
         </View>
 
-        <View style={styles.statBox}>
-          <Text style={styles.statValue}>{validatedIds.length}</Text>
+        <View style={styles.userBox}>
+          <Text style={styles.userLabel}>Utilisateurs</Text>
+          <Text style={styles.userValue}>{users.length}</Text>
+        </View>
+      </View>
+
+      <View style={[styles.statsRow, isPhone && styles.statsRowMobile]}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{stats.total}</Text>
+          <Text style={styles.statLabel}>Total annonces</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{stats.pending}</Text>
+          <Text style={styles.statLabel}>En attente</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{stats.approved}</Text>
           <Text style={styles.statLabel}>Validées</Text>
         </View>
 
-        <View style={styles.statBox}>
-          <Text style={styles.statValue}>{deletedIds.length}</Text>
-          <Text style={styles.statLabel}>Supprimées</Text>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{stats.rejected}</Text>
+          <Text style={styles.statLabel}>Refusées</Text>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Annonces à contrôler</Text>
+      <View style={[styles.filterBox, isPhone && styles.filterBoxMobile]}>
+        <TextInput
+          placeholder="Rechercher une annonce..."
+          placeholderTextColor="#6B6B5F"
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchInput}
+        />
 
-      {properties.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyTitle}>Aucune annonce disponible</Text>
-          <Text style={styles.emptyText}>
-            Les nouvelles annonces apparaîtront ici.
-          </Text>
+        <View style={[styles.tabs, isPhone && styles.tabsMobile]}>
+          {[
+            { key: "all", label: "Toutes" },
+            { key: "pending", label: "En attente" },
+            { key: "approved", label: "Validées" },
+            { key: "rejected", label: "Refusées" },
+          ].map((tab) => {
+            const active = filter === tab.key;
+
+            return (
+              <Pressable
+                key={tab.key}
+                style={[styles.tab, active && styles.tabActive]}
+                onPress={() => setFilter(tab.key as any)}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    active && styles.tabTextActive,
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
-      ) : (
-        properties.map((item: any) => {
-          const image = item?.images?.[0];
-          const isValidated = validatedIds.includes(item.id);
+      </View>
 
-          return (
-            <View key={item.id} style={styles.card}>
-              {image ? (
-                <Image source={{ uri: image }} style={styles.image} />
-              ) : (
-                <View style={styles.noImage}>
-                  <Text style={styles.noImageText}>Aucune image</Text>
-                </View>
-              )}
-
-              <View style={styles.content}>
-                <View style={styles.badges}>
-                  <Text style={styles.badge}>{item.type || "Bien"}</Text>
-                  <Text style={styles.badgeGold}>{item.purpose || "Vente"}</Text>
-                  {item.boost && <Text style={styles.badgePremium}>Premium</Text>}
-                  {isValidated && <Text style={styles.badgeValid}>Validée</Text>}
-                </View>
-
-                <Text style={styles.cardTitle}>
-                  {item.title || "Annonce immobilière"}
-                </Text>
-
-                <Text style={styles.price}>
-                  {Number(item.price || 0).toLocaleString("fr-FR")} FCFA
-                </Text>
-
-                <Text style={styles.location}>
-                  📍 {item.city || "-"} • {item.quartier || "-"}
-                </Text>
-
-                <Text style={styles.agent}>
-                  Agent : {item.agentName || item.sellerName || "Non renseigné"}
-                </Text>
-
-                <Text style={styles.phone}>
-                  Contact : {item.sellerPhone || "Non renseigné"}
-                </Text>
-
-                <View style={styles.actions}>
-                  <Pressable
+      <View style={styles.list}>
+        {filteredProperties.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyText}>
+              Aucune annonce trouvée.
+            </Text>
+          </View>
+        ) : (
+          filteredProperties.map((item) => (
+            <View
+              key={item.id}
+              style={[
+                styles.card,
+                isPhone && styles.cardMobile,
+              ]}
+            >
+              <View
+                style={[
+                  styles.cardTop,
+                  isPhone && styles.cardTopMobile,
+                ]}
+              >
+                <View style={styles.cardInfo}>
+                  <Text
                     style={[
-                      styles.validateButton,
-                      isValidated && styles.disabledButton,
+                      styles.cardTitle,
+                      isPhone && styles.cardTitleMobile,
                     ]}
-                    onPress={() => validateProperty(item.id)}
-                    disabled={isValidated}
+                    numberOfLines={2}
                   >
-                    <Text style={styles.validateText}>
-                      {isValidated ? "Déjà validée" : "Valider"}
-                    </Text>
-                  </Pressable>
+                    {item?.title || "Annonce immobilière"}
+                  </Text>
 
-                  <Pressable
-                    style={styles.deleteButton}
-                    onPress={() => deleteProperty(item.id)}
-                  >
-                    <Text style={styles.deleteText}>Supprimer</Text>
-                  </Pressable>
+                  <Text style={styles.cardMeta}>
+                    📍 {item?.city || "-"} • {item?.quartier || "-"}
+                  </Text>
+
+                  <Text style={styles.cardMeta}>
+                    👤 {item?.sellerName || "Non renseigné"}
+                  </Text>
+
+                  <Text style={styles.cardMeta}>
+                    📞 {item?.sellerPhone || "-"}
+                  </Text>
+
+                  <Text style={styles.cardPrice}>
+                    {Number(item?.price || 0).toLocaleString("fr-FR")} FCFA
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.statusBadge,
+                    getStatusStyle(item?.status),
+                  ]}
+                >
+                  <Text style={styles.statusText}>
+                    {getStatusText(item?.status)}
+                  </Text>
                 </View>
               </View>
+
+              <View
+                style={[
+                  styles.actions,
+                  isPhone && styles.actionsMobile,
+                ]}
+              >
+                <Pressable
+                  style={styles.approveButton}
+                  onPress={() => handleApprove(item)}
+                >
+                  <Text style={styles.approveText}>
+                    ✅ Valider
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.rejectButton}
+                  onPress={() => handleReject(item)}
+                >
+                  <Text style={styles.rejectText}>
+                    ❌ Refuser
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.deleteButton}
+                  onPress={() => handleDelete(item)}
+                >
+                  <Text style={styles.deleteText}>
+                    🗑 Supprimer
+                  </Text>
+                </Pressable>
+              </View>
             </View>
-          );
-        })
-      )}
+          ))
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -168,233 +348,293 @@ export function AdminScreen({ onBack }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F7F8F6",
-    padding: 18,
+    backgroundColor: "#F4F7F5",
   },
 
-  back: {
-    color: "#1F5C42",
-    fontWeight: "900",
-    marginBottom: 14,
-    fontSize: 16,
+  content: {
+    padding: 24,
+    paddingBottom: 60,
+  },
+
+  contentMobile: {
+    padding: 14,
   },
 
   header: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 26,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: "#E3EAE6",
-    marginBottom: 18,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+    gap: 16,
+  },
+
+  headerMobile: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
 
   title: {
-    color: "#06251A",
-    fontSize: 30,
+    fontSize: 34,
     fontWeight: "900",
+    color: "#06251A",
+  },
+
+  titleMobile: {
+    fontSize: 28,
   },
 
   subtitle: {
+    marginTop: 6,
     color: "#51635A",
     fontWeight: "700",
-    marginTop: 8,
+  },
+
+  userBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#E3EAE6",
+    alignItems: "center",
+    minWidth: 120,
+  },
+
+  userLabel: {
+    color: "#51635A",
+    fontWeight: "700",
+  },
+
+  userValue: {
+    color: "#1F5C42",
+    fontSize: 30,
+    fontWeight: "900",
+    marginTop: 4,
   },
 
   statsRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 16,
     marginBottom: 24,
   },
 
-  statBox: {
+  statsRowMobile: {
+    flexDirection: "column",
+  },
+
+  statCard: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    padding: 18,
-    borderRadius: 22,
+    borderRadius: 20,
+    padding: 20,
     borderWidth: 1,
     borderColor: "#E3EAE6",
   },
 
   statValue: {
-    color: "#C9A646",
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "900",
+    color: "#1F5C42",
   },
 
   statLabel: {
-    color: "#1F5C42",
-    fontWeight: "900",
-    marginTop: 4,
+    marginTop: 6,
+    color: "#51635A",
+    fontWeight: "700",
   },
 
-  sectionTitle: {
-    color: "#06251A",
-    fontSize: 24,
-    fontWeight: "900",
-    marginBottom: 14,
-  },
-
-  card: {
+  filterBox: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 26,
-    overflow: "hidden",
+    borderRadius: 22,
+    padding: 18,
     borderWidth: 1,
     borderColor: "#E3EAE6",
-    marginBottom: 18,
+    marginBottom: 22,
   },
 
-  image: {
-    width: "100%",
-    height: 230,
+  filterBoxMobile: {
+    padding: 14,
   },
 
-  noImage: {
-    height: 190,
-    backgroundColor: "#EDF3EF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  noImageText: {
-    color: "#1F5C42",
-    fontWeight: "900",
-  },
-
-  content: {
-    padding: 18,
-  },
-
-  badges: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12,
-  },
-
-  badge: {
-    backgroundColor: "#1F5C42",
-    color: "white",
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    fontWeight: "900",
-    overflow: "hidden",
-  },
-
-  badgeGold: {
-    backgroundColor: "#F0D77A",
+  searchInput: {
+    backgroundColor: "#F4F7F5",
+    borderWidth: 1,
+    borderColor: "#E3EAE6",
+    borderRadius: 16,
+    padding: 15,
+    fontWeight: "800",
     color: "#06251A",
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    fontWeight: "900",
-    overflow: "hidden",
   },
 
-  badgePremium: {
-    backgroundColor: "#FFF3C4",
-    color: "#8A6A00",
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    fontWeight: "900",
-    overflow: "hidden",
-  },
-
-  badgeValid: {
-    backgroundColor: "#EAF4EF",
-    color: "#1F5C42",
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    fontWeight: "900",
-    overflow: "hidden",
-  },
-
-  cardTitle: {
-    color: "#06251A",
-    fontSize: 22,
-    fontWeight: "900",
-  },
-
-  price: {
-    color: "#C9A646",
-    fontSize: 22,
-    fontWeight: "900",
-    marginTop: 6,
-  },
-
-  location: {
-    color: "#51635A",
-    fontWeight: "800",
-    marginTop: 8,
-  },
-
-  agent: {
-    color: "#1D2E26",
-    fontWeight: "800",
-    marginTop: 10,
-  },
-
-  phone: {
-    color: "#1D2E26",
-    fontWeight: "800",
-    marginTop: 4,
-  },
-
-  actions: {
+  tabs: {
     flexDirection: "row",
     gap: 10,
     marginTop: 16,
+    flexWrap: "wrap",
   },
 
-  validateButton: {
-    flex: 1,
+  tabsMobile: {
+    flexDirection: "column",
+  },
+
+  tab: {
+    backgroundColor: "#F4F7F5",
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+  },
+
+  tabActive: {
     backgroundColor: "#1F5C42",
-    padding: 15,
-    borderRadius: 16,
-    alignItems: "center",
   },
 
-  disabledButton: {
-    backgroundColor: "#8BA89A",
-  },
-
-  validateText: {
-    color: "white",
+  tabText: {
+    color: "#06251A",
     fontWeight: "900",
   },
 
-  deleteButton: {
-    flex: 1,
-    backgroundColor: "#A84A3A",
-    padding: 15,
-    borderRadius: 16,
-    alignItems: "center",
+  tabTextActive: {
+    color: "white",
   },
 
-  deleteText: {
-    color: "white",
-    fontWeight: "900",
+  list: {
+    gap: 16,
   },
 
   emptyBox: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
+    borderRadius: 20,
     padding: 24,
     borderWidth: 1,
     borderColor: "#E3EAE6",
   },
 
-  emptyTitle: {
-    color: "#06251A",
-    fontSize: 20,
-    fontWeight: "900",
-  },
-
   emptyText: {
     color: "#51635A",
     fontWeight: "700",
-    marginTop: 6,
+  },
+
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E3EAE6",
+  },
+
+  cardMobile: {
+    borderRadius: 18,
+    padding: 16,
+  },
+
+  cardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+
+  cardTopMobile: {
+    flexDirection: "column",
+  },
+
+  cardInfo: {
+    flex: 1,
+  },
+
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#06251A",
+  },
+
+  cardTitleMobile: {
+    fontSize: 18,
+  },
+
+  cardMeta: {
+    marginTop: 8,
+    color: "#51635A",
+    fontWeight: "700",
+  },
+
+  cardPrice: {
+    marginTop: 14,
+    color: "#C9A646",
+    fontWeight: "900",
+    fontSize: 24,
+  },
+
+  statusBadge: {
+    alignSelf: "flex-start",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+  },
+
+  statusPending: {
+    backgroundColor: "#FFF3C4",
+  },
+
+  statusApproved: {
+    backgroundColor: "#EAF4EF",
+  },
+
+  statusRejected: {
+    backgroundColor: "#FFE8EC",
+  },
+
+  statusText: {
+    fontWeight: "900",
+    color: "#06251A",
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+    flexWrap: "wrap",
+  },
+
+  actionsMobile: {
+    flexDirection: "column",
+  },
+
+  approveButton: {
+    backgroundColor: "#1F5C42",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+
+  approveText: {
+    color: "white",
+    fontWeight: "900",
+  },
+
+  rejectButton: {
+    backgroundColor: "#FFF3C4",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+
+  rejectText: {
+    color: "#7A5B00",
+    fontWeight: "900",
+  },
+
+  deleteButton: {
+    backgroundColor: "#FFE8EC",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+
+  deleteText: {
+    color: "#A84A3A",
+    fontWeight: "900",
   },
 });
