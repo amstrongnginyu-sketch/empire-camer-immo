@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +12,12 @@ import {
   View,
 } from "react-native";
 
+import PublishBasicInfo from "../components/publish/PublishBasicInfo";
+import PublishContactInfo from "../components/publish/PublishContactInfo";
+import PublishImages from "../components/publish/PublishImages";
+import PublishLocationInfo from "../components/publish/PublishLocationInfo";
+import PublishPriceInfo from "../components/publish/PublishPriceInfo";
+import PrimaryButton from "../components/shared/PrimaryButton";
 import { useAuth } from "../hooks/useAuth";
 import { storage } from "../services/firebase";
 import { createProperty } from "../services/propertyService";
@@ -28,24 +33,24 @@ export function PublishScreen({ onBack }: Props) {
   const [images, setImages] = useState<string[]>([]);
 
   const [purpose, setPurpose] = useState<"Vente" | "Location">("Vente");
-  const [title, setTitle] = useState("");
   const [type, setType] = useState("Maison");
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   const [city, setCity] = useState("Douala");
   const [quartier, setQuartier] = useState("");
   const [referencePoint, setReferencePoint] = useState("");
 
-  const [agentName, setAgentName] = useState("");
-  const [company, setCompany] = useState("");
-  const [sellerPhone, setSellerPhone] = useState("");
-
-  const [bedrooms, setBedrooms] = useState("");
-  const [bathrooms, setBathrooms] = useState("");
+  const [price, setPrice] = useState("");
   const [surface, setSurface] = useState("");
   const [landSurface, setLandSurface] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
 
-  const [price, setPrice] = useState("");
-  const [description, setDescription] = useState("");
+  const [agentName, setAgentName] = useState(profile?.name || "");
+  const [company, setCompany] = useState("");
+  const [sellerPhone, setSellerPhone] = useState(profile?.phone || "");
 
   async function pickImages() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -70,21 +75,6 @@ export function PublishScreen({ onBack }: Props) {
   function removeImage(indexToRemove: number) {
     setImages((current) =>
       current.filter((_, index) => index !== indexToRemove)
-    );
-  }
-
-  function removeAllImages() {
-    Alert.alert(
-      "Supprimer les images",
-      "Veux-tu supprimer toutes les images sélectionnées ?",
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Supprimer",
-          style: "destructive",
-          onPress: () => setImages([]),
-        },
-      ]
     );
   }
 
@@ -121,14 +111,13 @@ export function PublishScreen({ onBack }: Props) {
       !city ||
       !quartier ||
       !agentName ||
-      !company ||
       !sellerPhone ||
       !price ||
       !description
     ) {
       Alert.alert(
         "Champs manquants",
-        "Remplis : titre, type, ville, quartier, nom agent, compagnie, contact, prix et description."
+        "Remplis : titre, type, ville, quartier, agent, contact, prix et description."
       );
       return;
     }
@@ -189,16 +178,25 @@ export function PublishScreen({ onBack }: Props) {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <Pressable onPress={onBack}>
         <Text style={styles.back}>← Retour</Text>
       </Pressable>
 
-      <View style={styles.card}>
+      <View style={styles.header}>
         <Text style={styles.title}>Publier une annonce</Text>
         <Text style={styles.subtitle}>
-          Ajoute les informations du bien. L’annonce sera vérifiée avant publication.
+          Ajoute les informations du bien. L’annonce sera vérifiée avant
+          publication.
         </Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.smallTitle}>Type d’annonce</Text>
 
         <View style={styles.row}>
           <Pressable
@@ -233,166 +231,111 @@ export function PublishScreen({ onBack }: Props) {
           </Pressable>
         </View>
 
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.big]}
-            placeholder="Titre de l’annonce"
-            value={title}
-            onChangeText={setTitle}
-          />
-        </View>
-
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Ville"
-            value={city}
-            onChangeText={setCity}
-          />
-
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Quartier"
-            value={quartier}
-            onChangeText={setQuartier}
-          />
-
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Point de repère"
-            value={referencePoint}
-            onChangeText={setReferencePoint}
-          />
-        </View>
-
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Nom de l’agent"
-            value={agentName}
-            onChangeText={setAgentName}
-          />
-
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Compagnie"
-            value={company}
-            onChangeText={setCompany}
-          />
-
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Contact"
-            value={sellerPhone}
-            onChangeText={setSellerPhone}
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Chambres"
-            value={bedrooms}
-            onChangeText={setBedrooms}
-            keyboardType="numeric"
-          />
-
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Douches"
-            value={bathrooms}
-            onChangeText={setBathrooms}
-            keyboardType="numeric"
-          />
-
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Surface m²"
-            value={surface}
-            onChangeText={setSurface}
-            keyboardType="numeric"
-          />
-
-          <TextInput
-            style={[styles.input, styles.flex]}
-            placeholder="Terrain m²"
-            value={landSurface}
-            onChangeText={setLandSurface}
-            keyboardType="numeric"
-          />
-        </View>
-
+        <Text style={styles.label}>Type de bien</Text>
         <TextInput
           style={styles.input}
-          placeholder="Prix en FCFA"
-          value={price}
-          onChangeText={setPrice}
+          placeholder="Maison, Appartement, Terrain..."
+          placeholderTextColor="#7A807C"
+          value={type}
+          onChangeText={setType}
+        />
+      </View>
+
+      <PublishBasicInfo
+        title={title}
+        description={description}
+        type={type}
+        purpose={purpose}
+        onChangeTitle={setTitle}
+        onChangeDescription={setDescription}
+      />
+
+      <PublishLocationInfo
+        city={city}
+        neighborhood={quartier}
+        address={referencePoint}
+        onChangeCity={setCity}
+        onChangeNeighborhood={setQuartier}
+        onChangeAddress={setReferencePoint}
+      />
+
+      <PublishPriceInfo
+        price={price}
+        surface={surface}
+        bedrooms={bedrooms}
+        bathrooms={bathrooms}
+        onChangePrice={setPrice}
+        onChangeSurface={setSurface}
+        onChangeBedrooms={setBedrooms}
+        onChangeBathrooms={setBathrooms}
+      />
+
+      <View style={styles.card}>
+        <Text style={styles.smallTitle}>Terrain / complément</Text>
+
+        <Text style={styles.label}>Surface terrain (m²)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: 500"
+          placeholderTextColor="#7A807C"
+          value={landSurface}
+          onChangeText={setLandSurface}
           keyboardType="numeric"
         />
+      </View>
 
+      <PublishImages
+        images={images}
+        onAddImage={pickImages}
+        onRemoveImage={removeImage}
+      />
+
+      <PublishContactInfo
+        name={agentName}
+        phone={sellerPhone}
+        email={user?.email || ""}
+        onChangeName={setAgentName}
+        onChangePhone={setSellerPhone}
+      />
+
+      <View style={styles.card}>
+        <Text style={styles.smallTitle}>Agence / Compagnie</Text>
+
+        <Text style={styles.label}>Nom de l’agence</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Description du bien"
-          multiline
-          value={description}
-          onChangeText={setDescription}
+          style={styles.input}
+          placeholder="Ex: Empire Camer Immo"
+          placeholderTextColor="#7A807C"
+          value={company}
+          onChangeText={setCompany}
         />
+      </View>
 
-        <View style={styles.imageActions}>
-          <Pressable style={styles.imageButton} onPress={pickImages}>
-            <Text style={styles.imageText}>
-              {images.length
-                ? `Images sélectionnées (${images.length})`
-                : "Ajouter des photos"}
-            </Text>
-          </Pressable>
-
-          {images.length > 0 && (
-            <Pressable style={styles.deleteAllButton} onPress={removeAllImages}>
-              <Text style={styles.deleteAllText}>Tout supprimer</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {images.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {images.map((img, index) => (
-              <View key={index} style={styles.previewBox}>
-                <Image source={{ uri: img }} style={styles.preview} />
-
-                <Pressable
-                  style={styles.deleteImageButton}
-                  onPress={() => removeImage(index)}
-                >
-                  <Text style={styles.deleteImageText}>×</Text>
-                </Pressable>
-              </View>
-            ))}
-          </ScrollView>
+      <View style={styles.submitBox}>
+        {loading ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color="#1F5C42" />
+            <Text style={styles.loadingText}>Publication en cours...</Text>
+          </View>
+        ) : (
+          <PrimaryButton title="Envoyer l’annonce" onPress={handleSubmit} />
         )}
-
-        <Pressable
-          style={[styles.button, loading && styles.disabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.buttonText}>Envoyer l’annonce</Text>
-          )}
-        </Pressable>
       </View>
     </ScrollView>
   );
 }
 
+export default PublishScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F7F4",
+  },
+
+  content: {
     padding: 18,
+    paddingBottom: 90,
   },
 
   back: {
@@ -402,21 +345,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 28,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: "#EDE6D6",
-    shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    marginBottom: 50,
+  header: {
+    marginBottom: 18,
   },
 
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "900",
     color: "#06251A",
   },
@@ -425,26 +359,30 @@ const styles = StyleSheet.create({
     color: "#6B6B5F",
     fontWeight: "700",
     marginTop: 8,
-    marginBottom: 20,
     lineHeight: 22,
+  },
+
+  card: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: "#E3EAE6",
+    marginBottom: 18,
+  },
+
+  smallTitle: {
+    color: "#06251A",
+    fontSize: 22,
+    fontWeight: "900",
+    marginBottom: 16,
   },
 
   row: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 12,
-  },
-
-  flex: {
-    flex: 1,
-  },
-
-  big: {
-    flex: 2,
-  },
-
-  small: {
-    flex: 1,
+    marginBottom: 16,
   },
 
   segment: {
@@ -468,104 +406,46 @@ const styles = StyleSheet.create({
   },
 
   segmentTextActive: {
-    color: "white",
+    color: "#FFFFFF",
+  },
+
+  label: {
+    color: "#06251A",
+    fontSize: 15,
+    fontWeight: "900",
+    marginBottom: 10,
   },
 
   input: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 16,
-    fontSize: 16,
+    minHeight: 56,
+    borderRadius: 18,
+    backgroundColor: "#F7F8F6",
     borderWidth: 1,
-    borderColor: "#EDE6D6",
+    borderColor: "#E3EAE6",
+    paddingHorizontal: 16,
     color: "#06251A",
+    fontSize: 15,
+    fontWeight: "700",
+    outlineStyle: "none" as any,
   },
 
-  textArea: {
-    minHeight: 130,
-    textAlignVertical: "top",
-    marginBottom: 12,
+  submitBox: {
+    marginTop: 4,
+    marginBottom: 30,
   },
 
-  imageActions: {
+  loadingBox: {
+    minHeight: 54,
+    borderRadius: 16,
+    backgroundColor: "#EAF4EF",
+    alignItems: "center",
+    justifyContent: "center",
     flexDirection: "row",
     gap: 10,
-    marginBottom: 12,
   },
 
-  imageButton: {
-    flex: 1,
-    backgroundColor: "#F0D77A",
-    padding: 16,
-    borderRadius: 16,
-    alignItems: "center",
-  },
-
-  imageText: {
-    color: "#06251A",
+  loadingText: {
+    color: "#1F5C42",
     fontWeight: "900",
-  },
-
-  deleteAllButton: {
-    backgroundColor: "#A84A3A",
-    padding: 16,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  deleteAllText: {
-    color: "white",
-    fontWeight: "900",
-  },
-
-  previewBox: {
-    position: "relative",
-    marginRight: 10,
-    marginBottom: 14,
-  },
-
-  preview: {
-    width: 130,
-    height: 100,
-    borderRadius: 16,
-  },
-
-  deleteImageButton: {
-    position: "absolute",
-    top: -8,
-    right: -8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#A84A3A",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  deleteImageText: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "900",
-    lineHeight: 24,
-  },
-
-  button: {
-    backgroundColor: "#1F5C42",
-    padding: 18,
-    borderRadius: 20,
-    alignItems: "center",
-    marginTop: 12,
-    marginBottom: 20,
-  },
-
-  disabled: {
-    opacity: 0.6,
-  },
-
-  buttonText: {
-    color: "white",
-    fontWeight: "900",
-    fontSize: 16,
   },
 });

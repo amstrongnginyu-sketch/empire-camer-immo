@@ -1,14 +1,15 @@
 import {
-    addDoc,
-    collection,
-    doc,
-    limit,
-    onSnapshot,
-    orderBy,
-    query,
-    serverTimestamp,
-    updateDoc,
-    where,
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 
 import { Property } from "../types/property";
@@ -50,10 +51,27 @@ export function listenAdminProperties(callback: (items: Property[]) => void) {
   });
 }
 
+export async function getAllProperties(): Promise<Property[]> {
+  const q = query(collection(db, "annonces"), orderBy("createdAt", "desc"));
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data(),
+  })) as Property[];
+}
+
 export async function createProperty(
   input: Omit<
     Property,
-    "id" | "status" | "verified" | "boost" | "boostUntil" | "createdAt" | "updatedAt"
+    | "id"
+    | "status"
+    | "verified"
+    | "boost"
+    | "boostUntil"
+    | "createdAt"
+    | "updatedAt"
   >,
   autoApprove: boolean
 ) {

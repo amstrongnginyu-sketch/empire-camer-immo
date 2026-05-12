@@ -1,6 +1,6 @@
 import {
-    CLOUDINARY_CLOUD_NAME,
-    CLOUDINARY_UPLOAD_PRESET,
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_UPLOAD_PRESET,
 } from "../config/cloudinary";
 
 export async function uploadImageToCloudinary(imageUri: string) {

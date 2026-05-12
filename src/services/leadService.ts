@@ -1,51 +1,53 @@
 import {
-    addDoc,
-    collection,
-    onSnapshot,
-    orderBy,
-    query,
-    serverTimestamp,
+  addDoc,
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
 } from "firebase/firestore";
 
-import { Lead, LeadSource } from "../types/lead";
-import { Property } from "../types/property";
-import { UserProfile } from "../types/user";
 import { db } from "./firebase";
 
-export function listenLeads(callback: (items: Lead[]) => void) {
+export function listenLeads(callback: (items: any[]) => void) {
   const q = query(collection(db, "leads"), orderBy("createdAt", "desc"));
 
   return onSnapshot(q, (snapshot) => {
-    callback(
-      snapshot.docs.map((document) => ({
-        id: document.id,
-        ...document.data(),
-      })) as Lead[]
-    );
+    const leads = snapshot.docs.map((document) => ({
+      id: document.id,
+      ...document.data(),
+    }));
+
+    callback(leads);
   });
 }
 
 export async function trackLead(input: {
-  property: Property;
-  source: LeadSource;
+  property: any;
+  source: any;
   buyerId: string;
   buyerEmail: string;
-  profile: UserProfile | null;
+  profile: any;
 }) {
   const { property, source, buyerId, buyerEmail, profile } = input;
 
   await addDoc(collection(db, "leads"), {
-    annonceId: property.id,
-    annonceTitle: property.title,
-    ownerId: property.ownerId || "demo",
-    ownerEmail: property.ownerEmail || "",
+    annonceId: property?.id || "",
+    annonceTitle: property?.title || "Annonce immobilière",
+
+    ownerId: property?.ownerId || "demo",
+    ownerEmail: property?.ownerEmail || "",
+
     buyerId,
     buyerEmail,
-    buyerName: profile?.name || "Utilisateur",
+    buyerName: profile?.name || profile?.displayName || "Utilisateur",
+
     source,
-    city: property.city || "",
-    quartier: property.quartier || "",
-    price: property.price || "",
+
+    city: property?.city || "",
+    quartier: property?.quartier || "",
+    price: property?.price || "",
+
     createdAt: serverTimestamp(),
   });
 }
