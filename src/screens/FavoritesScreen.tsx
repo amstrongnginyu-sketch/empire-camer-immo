@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { PropertyCard } from "../components/PropertyCard";
+import { PropertyCard } from "../components/property/PropertyCard";
 import { useProperties } from "../hooks/useProperties";
 
 const FAVORITES_KEY = "empire_camer_immo_favorites";

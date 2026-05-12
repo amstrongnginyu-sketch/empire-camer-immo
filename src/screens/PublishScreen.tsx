@@ -240,13 +240,6 @@ export function PublishScreen({ onBack }: Props) {
             value={title}
             onChangeText={setTitle}
           />
-
-          <TextInput
-            style={[styles.input, styles.small]}
-            placeholder="Maison, Appartement, Terrain..."
-            value={type}
-            onChangeText={setType}
-          />
         </View>
 
         <View style={styles.row}>

@@ -9,7 +9,7 @@ import { AdminScreen } from "../screens/AdminScreen";
 import { AuthScreen } from "../screens/AuthScreen";
 import { BoostPaymentScreen } from "../screens/BoostPaymentScreen";
 import FavoritesScreen from "../screens/FavoritesScreen";
-import { HomeScreen } from "../screens/HomeScreen";
+import HomeScreen from "../screens/HomeScreen";
 import { PropertyDetailScreen } from "../screens/PropertyDetailScreen";
 import { PublishScreen } from "../screens/PublishScreen";
 
@@ -110,6 +110,21 @@ export default function AppNavigator() {
     }
   }
 
+  function renderHome() {
+    return (
+      <HomeScreen
+        isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
+        profile={profile}
+        onRequireAuth={() => setScreen("auth")}
+        onNavigate={setScreen}
+        onOpenProperty={openProperty}
+        onBoostProperty={openBoost}
+        boostedIds={boostedIds}
+      />
+    );
+  }
+
   function renderScreen() {
     if (screen === "auth") {
       return (
@@ -135,18 +150,7 @@ export default function AppNavigator() {
 
     if (screen === "admin") {
       if (!isLoggedIn || !isAdmin) {
-        return (
-          <HomeScreen
-            isLoggedIn={isLoggedIn}
-            isAdmin={isAdmin}
-            profile={profile}
-            onRequireAuth={() => setScreen("auth")}
-            onNavigate={setScreen}
-            onOpenProperty={openProperty}
-            onBoostProperty={openBoost}
-            boostedIds={boostedIds}
-          />
-        );
+        return renderHome();
       }
 
       return <AdminScreen onBack={() => setScreen("home")} />;
@@ -175,33 +179,26 @@ export default function AppNavigator() {
       );
     }
 
-    return (
-      <HomeScreen
-        isLoggedIn={isLoggedIn}
-        isAdmin={isAdmin}
-        profile={profile}
-        onRequireAuth={() => setScreen("auth")}
-        onNavigate={setScreen}
-        onOpenProperty={openProperty}
-        onBoostProperty={openBoost}
-        boostedIds={boostedIds}
-      />
-    );
+    return renderHome();
   }
+
+  const hideHeader = screen === "auth";
 
   return (
     <View style={styles.app}>
-      <AppHeader
-        isLoggedIn={isLoggedIn}
-        userEmail={profile?.email}
-        isAdmin={isAdmin}
-        onHome={() => setScreen("home")}
-        onPublish={goPublish}
-        onLogin={() => setScreen("auth")}
-        onLogout={handleLogout}
-        onAdmin={goAdmin}
-        onFavorites={goFavorites}
-      />
+      {!hideHeader && (
+        <AppHeader
+          isLoggedIn={isLoggedIn}
+          userEmail={profile?.email}
+          isAdmin={isAdmin}
+          onHome={() => setScreen("home")}
+          onPublish={goPublish}
+          onLogin={() => setScreen("auth")}
+          onLogout={handleLogout}
+          onAdmin={goAdmin}
+          onFavorites={goFavorites}
+        />
+      )}
 
       <View style={styles.content}>{renderScreen()}</View>
     </View>

@@ -16,6 +16,7 @@ type Props = {
   onApproveProperty?: (property: any) => void;
   onRejectProperty?: (property: any) => void;
   onDeleteProperty?: (property: any) => void;
+  onBack?: () => void;
 };
 
 export function AdminScreen({

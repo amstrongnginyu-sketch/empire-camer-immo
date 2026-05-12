@@ -15,11 +15,10 @@ function AppFooter() {
           <Text style={styles.sep}>|</Text>
           <Text style={styles.link}>CONTACT US</Text>
           <Text style={styles.sep}>|</Text>
-          <Text style={styles.link}>TERMS & PRIVACY POLICY</Text>
+          <Text style={styles.link}>TERMS & PRIVACY</Text>
         </View>
 
         <Text style={styles.country}>COUNTRY: 🇨🇲 Cameroon ▾</Text>
-
         <Text style={styles.copy}>© 2026 Empire Camer Immo</Text>
       </View>
 
@@ -64,105 +63,124 @@ export { AppFooter };
 export default AppFooter;
 
 const styles = StyleSheet.create({
-  footer: {
-    marginTop: 40,
-    backgroundColor: "#050706",
-    paddingVertical: 38,
-    paddingHorizontal: 48,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 30,
-    borderTopWidth: 4,
-    borderTopColor: "#1F5C42",
-  },
+ footer: {
+  position: "fixed" as any,
+
+  left: 0,
+  right: 0,
+  bottom: 0,
+  top: "auto" as any,
+
+  height: 92,
+
+  backgroundColor: "#050706",
+  borderTopWidth: 3,
+  borderTopColor: "#1F5C42",
+
+  paddingVertical: 10,
+  paddingHorizontal: 28,
+
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+
+  zIndex: 999999,
+
+  elevation: 999,
+
+  shadowColor: "#000",
+  shadowOpacity: 0.2,
+  shadowRadius: 12,
+},
 
   left: {
     flex: 1,
+    minWidth: 0,
   },
 
   links: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 24,
+    gap: 8,
+    marginBottom: 8,
   },
 
   link: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 11,
     fontWeight: "900",
-    letterSpacing: 1.5,
+    letterSpacing: 1,
   },
 
   sep: {
     color: "#777777",
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: "900",
   },
 
   country: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 11,
     fontWeight: "800",
-    marginBottom: 30,
+    marginBottom: 6,
   },
 
   copy: {
     color: "#9C9C9C",
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: "700",
   },
 
   right: {
     alignItems: "flex-end",
+    gap: 6,
   },
 
   socials: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 18,
+    gap: 8,
   },
 
   social: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "#FFFFFF",
     color: "#111111",
     textAlign: "center",
-    lineHeight: 42,
-    fontSize: 22,
+    lineHeight: 28,
+    fontSize: 15,
     fontWeight: "900",
     overflow: "hidden",
   },
 
   storeRow: {
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 18,
+    gap: 8,
   },
 
   store: {
     color: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#FFFFFF",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 9,
     borderRadius: 6,
     fontWeight: "900",
-    fontSize: 12,
+    fontSize: 10,
   },
 
   topButton: {
     backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
     borderRadius: 999,
   },
 
   topText: {
     color: "#000000",
+    fontSize: 10,
     fontWeight: "900",
   },
 });

@@ -13,7 +13,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { PropertyCard } from "../components/PropertyCard";
+import { PropertyCard } from "../components/property/PropertyCard";
 
 type Props = {
   property: any;

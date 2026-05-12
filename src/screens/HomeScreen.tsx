@@ -11,9 +11,10 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { PropertyCard } from "../components/PropertyCard";
-import { SecurityNotice } from "../components/SecurityNotice";
-import { SponsoredSlider } from "../components/SponsoredSlider";
+
+import AppFooter from "../components/AppFooter";
+import HomePropertyGrid from "../components/home/HomePropertyGrid";
+import SecurityNotice from "../components/SecurityNotice";
 import { useProperties } from "../hooks/useProperties";
 import { UserProfile } from "../types/user";
 
@@ -37,6 +38,8 @@ type PropertyLike = {
   purpose?: string;
   price?: string | number;
   boost?: boolean;
+  boosted?: boolean;
+  premium?: boolean;
   verified?: boolean;
   images?: string[];
   bedrooms?: string | number;
@@ -51,26 +54,26 @@ type PropertyLike = {
 };
 
 const HERO_IMAGES = [
-  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1800&q=80",
-  "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1800&q=80",
-  "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1800&q=80",
+  "https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=2070&auto=format&fit=crop",
 ];
 
 const ADS = [
   {
     label: "PUBLICITÉ PREMIUM",
     title: "Projets locaux au Cameroun",
-    text: "Résidences, immeubles, terrains, lotissements et villas premium.",
+    text: "Résidences, immeubles, terrains et villas premium.",
   },
   {
     label: "ESPACE AGENCE",
     title: "Mettez vos biens en avant",
-    text: "Idéal pour les agences qui veulent plus de visibilité et plus de leads.",
+    text: "Idéal pour les agences qui veulent plus de visibilité.",
   },
   {
     label: "PROMOTEURS",
     title: "Présentez vos programmes",
-    text: "Un espace dédié aux projets immobiliers locaux et premium.",
+    text: "Un espace dédié aux projets immobiliers locaux.",
   },
 ];
 
@@ -78,25 +81,27 @@ const DEMO_PROPERTIES: PropertyLike[] = [
   {
     id: "demo-1",
     title: "Villa moderne avec piscine",
-    price: 250000000,
+    price: 10000000,
     city: "Douala",
-    quartier: "Bonapriso",
-    type: "Maison",
+    quartier: "PK 14",
+    type: "appartement",
     purpose: "Vente",
     bedrooms: 4,
-    bathrooms: 3,
-    surface: 320,
-    landSurface: 500,
+    bathrooms: 4,
+    surface: 120,
     boost: true,
+    premium: true,
+    boosted: true,
     verified: true,
-    agentName: "Empire Immo",
+    agentName: "Empire Kao",
     sellerPhone: "+237690000000",
-    description: "Villa premium dans un quartier résidentiel calme.",
-    images: [],
+    images: [
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1600&auto=format&fit=crop",
+    ],
   },
 ];
 
-export function HomeScreen({
+export default function HomeScreen({
   isLoggedIn,
   onRequireAuth,
   onNavigate,
@@ -108,27 +113,18 @@ export function HomeScreen({
 
   const isPhone = width < 700;
   const isTablet = width >= 700 && width < 1024;
-  const showSidebar = width >= 900;
+  const showSidebar = width >= 1024;
 
-  const pagePadding = isPhone ? 14 : isTablet ? 18 : 24;
-  const gap = isPhone ? 18 : 22;
-  const cardWidth = "100%";
+  const pagePadding = isPhone ? 12 : isTablet ? 16 : 22;
 
   const { recentProperties = [], popularProperties = [] } = useProperties(true);
 
   const [search, setSearch] = useState("");
-  const [selectedPurpose, setSelectedPurpose] = useState<"Vente" | "Location" | "Terrain">("Vente");
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedPurpose, setSelectedPurpose] = useState<
+    "Vente" | "Location" | "Terrain"
+  >("Vente");
 
   const [filterOpen, setFilterOpen] = useState(false);
-  const [filterCity, setFilterCity] = useState("");
-  const [filterQuartier, setFilterQuartier] = useState("");
-  const [filterMinPrice, setFilterMinPrice] = useState("");
-  const [filterMaxPrice, setFilterMaxPrice] = useState("");
-  const [filterMinSurface, setFilterMinSurface] = useState("");
-  const [filterMaxSurface, setFilterMaxSurface] = useState("");
-
   const [heroIndex, setHeroIndex] = useState(0);
   const [adIndex, setAdIndex] = useState(0);
 
@@ -141,15 +137,10 @@ export function HomeScreen({
     return () => clearInterval(timer);
   }, []);
 
-  function normalizeText(value: string) {
-    const clean = value.trim();
+  function normalizeText(value: any) {
+    const clean = String(value || "").trim();
     if (!clean) return "Autre";
     return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
-  }
-
-  function toNumber(value: any) {
-    const number = Number(String(value || "").replace(/\s/g, ""));
-    return Number.isNaN(number) ? 0 : number;
   }
 
   const firebaseProperties = useMemo(() => {
@@ -163,12 +154,17 @@ export function HomeScreen({
   }, [popularProperties, recentProperties]);
 
   const allProperties = useMemo(() => {
-    const source = firebaseProperties.length > 0 ? firebaseProperties : DEMO_PROPERTIES;
+    const source =
+      firebaseProperties.length > 0 ? firebaseProperties : DEMO_PROPERTIES;
 
     return source
       .map((item) => ({
         ...item,
-        boost: item.boost || boostedIds.includes(String(item.id)),
+        boost:
+          item.boost ||
+          item.boosted ||
+          item.premium ||
+          boostedIds.includes(String(item.id)),
       }))
       .sort((a, b) => {
         if (a.boost && !b.boost) return -1;
@@ -179,88 +175,45 @@ export function HomeScreen({
 
   const sponsoredProperties = useMemo(() => {
     const boosted = allProperties.filter((item) => item.boost);
-    return boosted.length > 0 ? boosted : allProperties.slice(0, 8);
+    return boosted.length > 0 ? boosted.slice(0, 3) : allProperties.slice(0, 3);
   }, [allProperties]);
 
   const boostedProperties = useMemo(() => {
-    return allProperties.filter((item) => item.boost);
+    return allProperties.filter((item) => item.boost).slice(0, 6);
   }, [allProperties]);
+
+  const filteredProperties = useMemo(() => {
+    return allProperties.filter((item) => {
+      const text = `${item.title || ""} ${item.city || ""} ${
+        item.quartier || ""
+      } ${item.type || ""}`.toLowerCase();
+
+      const matchSearch = search ? text.includes(search.toLowerCase()) : true;
+
+      const matchPurpose =
+        selectedPurpose === "Terrain"
+          ? normalizeText(item.type) === "Terrain"
+          : item.purpose
+          ? item.purpose === selectedPurpose
+          : true;
+
+      return matchSearch && matchPurpose;
+    });
+  }, [allProperties, search, selectedPurpose]);
 
   const cityStats = useMemo(() => {
     const stats: Record<string, Record<string, number>> = {};
 
     allProperties.forEach((item) => {
-      const city = normalizeText(item.city || "Autre");
-      const type = normalizeText(item.type || "Autre");
+      const city = normalizeText(item.city);
+      const type = normalizeText(item.type);
 
       if (!stats[city]) stats[city] = {};
       stats[city][type] = (stats[city][type] || 0) + 1;
     });
 
-    return Object.entries(stats).sort((a, b) => a[0].localeCompare(b[0]));
+    return Object.entries(stats);
   }, [allProperties]);
-
-  const hasAdvancedFilter =
-    filterCity ||
-    filterQuartier ||
-    filterMinPrice ||
-    filterMaxPrice ||
-    filterMinSurface ||
-    filterMaxSurface;
-
-  const filteredProperties = useMemo(() => {
-    return allProperties.filter((item) => {
-      const text = `${item.title || ""} ${item.city || ""} ${item.quartier || ""} ${item.type || ""}`.toLowerCase();
-
-      const price = toNumber(item.price);
-      const surface = toNumber(item.surface);
-
-      const matchSearch = search ? text.includes(search.toLowerCase()) : true;
-
-      const matchCity = selectedCity
-        ? normalizeText(item.city || "") === selectedCity
-        : filterCity
-        ? String(item.city || "").toLowerCase().includes(filterCity.toLowerCase())
-        : true;
-
-      const matchQuartier = filterQuartier
-        ? String(item.quartier || "").toLowerCase().includes(filterQuartier.toLowerCase())
-        : true;
-
-      const matchType = selectedType ? normalizeText(item.type || "") === selectedType : true;
-
-      const matchPurpose =
-        selectedPurpose === "Terrain"
-          ? normalizeText(item.type || "") === "Terrain"
-          : item.purpose
-          ? item.purpose === selectedPurpose
-          : true;
-
-      return (
-        matchSearch &&
-        matchCity &&
-        matchQuartier &&
-        matchType &&
-        matchPurpose &&
-        (filterMinPrice ? price >= toNumber(filterMinPrice) : true) &&
-        (filterMaxPrice ? price <= toNumber(filterMaxPrice) : true) &&
-        (filterMinSurface ? surface >= toNumber(filterMinSurface) : true) &&
-        (filterMaxSurface ? surface <= toNumber(filterMaxSurface) : true)
-      );
-    });
-  }, [
-    allProperties,
-    search,
-    selectedCity,
-    selectedType,
-    selectedPurpose,
-    filterCity,
-    filterQuartier,
-    filterMinPrice,
-    filterMaxPrice,
-    filterMinSurface,
-    filterMaxSurface,
-  ]);
 
   function handlePublish() {
     if (!isLoggedIn) {
@@ -271,56 +224,21 @@ export function HomeScreen({
     onNavigate("publish");
   }
 
-  function clearFilters() {
-    setSearch("");
-    setSelectedCity(null);
-    setSelectedType(null);
-    setFilterCity("");
-    setFilterQuartier("");
-    setFilterMinPrice("");
-    setFilterMaxPrice("");
-    setFilterMinSurface("");
-    setFilterMaxSurface("");
-  }
-
-  function applyFilters() {
-    setSelectedCity(null);
-    setSelectedType(null);
-    setFilterOpen(false);
-  }
-
-  function renderGrid(items: PropertyLike[]) {
-    return (
-      <View style={[styles.grid, { gap }]}>
-        {items.map((item) => (
-          <View key={item.id} style={[styles.gridItem, { width: cardWidth as any }]}>
-            <PropertyCard
-              item={item}
-              compact={false}
-              onPress={() => onOpenProperty(item)}
-              onBoost={() => onBoostProperty?.(item)}
-            />
-          </View>
-        ))}
-      </View>
-    );
-  }
-
-  const hasFilter = Boolean(search || selectedCity || selectedType || hasAdvancedFilter);
   const activeAd = ADS[adIndex];
 
   return (
     <LinearGradient colors={["#FFFFFF", "#F7F8F6", "#EEF2F0"]} style={styles.bg}>
-      <ScrollView
-        style={[styles.container, { padding: pagePadding }]}
-        showsVerticalScrollIndicator={false}
-      >
+   <ScrollView
+  style={[styles.container, { padding: pagePadding }]}
+  showsVerticalScrollIndicator={false}
+  contentContainerStyle={{ paddingBottom: 120 }}
+>
         <ImageBackground
           source={{ uri: HERO_IMAGES[heroIndex] }}
           style={[styles.hero, isPhone && styles.heroMobile]}
-          imageStyle={[styles.heroImage, isPhone && styles.heroImageMobile]}
+          imageStyle={styles.heroImage}
         >
-          <View style={[styles.heroOverlay, isPhone && styles.heroOverlayMobile]}>
+          <View style={styles.heroOverlay}>
             <View style={styles.heroContent}>
               <Text style={[styles.kicker, isPhone && styles.kickerMobile]}>
                 EMPIRE CAMER IMMO
@@ -330,42 +248,55 @@ export function HomeScreen({
                 Trouve le bien idéal au Cameroun
               </Text>
 
-              <Text style={[styles.heroSubtitle, isPhone && styles.heroSubtitleMobile]}>
-                Villas, appartements, terrains et immeubles vérifiés • Contact direct vendeur
+              <Text
+                style={[
+                  styles.heroSubtitle,
+                  isPhone && styles.heroSubtitleMobile,
+                ]}
+              >
+                Villas, appartements, terrains et immeubles vérifiés
               </Text>
 
               <View style={[styles.searchPanel, isPhone && styles.searchPanelMobile]}>
-                <View style={[styles.segmentRow, !isPhone && styles.segmentRowDesktop]}>
+                <View style={styles.segmentRow}>
                   {["Vente", "Location", "Terrain"].map((item) => {
                     const active = selectedPurpose === item;
 
                     return (
                       <Pressable
                         key={item}
-                        style={[styles.segment, isPhone && styles.segmentMobile, active && styles.segmentActive]}
+                        style={[
+                          styles.segment,
+                          isPhone && styles.segmentMobile,
+                          active && styles.segmentActive,
+                        ]}
                         onPress={() => setSelectedPurpose(item as any)}
                       >
-                        <Text style={[styles.segmentText, isPhone && styles.segmentTextMobile, active && styles.segmentTextActive]}>
-                          {item === "Vente" ? "Acheter" : item === "Location" ? "Louer" : "Terrains"}
+                        <Text
+                          style={[
+                            styles.segmentText,
+                            isPhone && styles.segmentTextMobile,
+                            active && styles.segmentTextActive,
+                          ]}
+                        >
+                          {item === "Vente"
+                            ? "Acheter"
+                            : item === "Location"
+                            ? "Louer"
+                            : "Terrains"}
                         </Text>
                       </Pressable>
                     );
                   })}
 
                   <Pressable
-                    style={[
-                      styles.filterButton,
-                      !isPhone && styles.filterButtonDesktop,
-                      isPhone && styles.filterButtonMobile,
-                      hasAdvancedFilter && styles.filterButtonActive,
-                    ]}
+                    style={[styles.filterButton, isPhone && styles.filterButtonMobile]}
                     onPress={() => setFilterOpen(true)}
                   >
                     <Text
                       style={[
                         styles.filterButtonText,
-                        isPhone && styles.filterButtonTextMobile,
-                        hasAdvancedFilter && styles.filterButtonTextActive,
+                        isPhone && styles.segmentTextMobile,
                       ]}
                     >
                       Filtres ⚙️
@@ -382,16 +313,12 @@ export function HomeScreen({
                 />
 
                 <View style={[styles.searchActions, isPhone && styles.searchActionsMobile]}>
-                  <Pressable style={[styles.searchButton, isPhone && styles.searchButtonMobile]}>
-                    <Text style={[styles.searchButtonText, isPhone && styles.buttonTextMobile]}>
-                      Rechercher
-                    </Text>
+                  <Pressable style={styles.searchButton}>
+                    <Text style={styles.searchButtonText}>Rechercher</Text>
                   </Pressable>
 
-                  <Pressable style={[styles.publishButton, isPhone && styles.publishButtonMobile]} onPress={handlePublish}>
-                    <Text style={[styles.publishText, isPhone && styles.buttonTextMobile]}>
-                      Publier
-                    </Text>
+                  <Pressable style={styles.publishButton} onPress={handlePublish}>
+                    <Text style={styles.publishText}>Publier</Text>
                   </Pressable>
                 </View>
               </View>
@@ -402,102 +329,65 @@ export function HomeScreen({
         <View style={[styles.pageLayout, !showSidebar && styles.pageLayoutSingle]}>
           <View style={styles.mainColumn}>
             <View style={styles.statsContainer}>
-              <View style={[styles.statsHeader, isPhone && styles.statsHeaderMobile]}>
-                <Text style={[styles.statsTitle, isPhone && styles.statsTitleMobile]}>
-                  Biens disponibles par ville
-                </Text>
-
-                {hasFilter && (
-                  <Pressable onPress={clearFilters}>
-                    <Text style={styles.clearText}>Voir tout</Text>
-                  </Pressable>
-                )}
-              </View>
+              <Text style={styles.statsTitle}>Biens disponibles par ville</Text>
 
               {cityStats.map(([city, types]) => (
                 <View key={city} style={styles.cityCard}>
-                  <Pressable
-                    onPress={() => {
-                      setSelectedCity(city);
-                      setSelectedType(null);
-                    }}
-                  >
-                    <Text style={[styles.cityTitle, selectedCity === city && styles.activeCityTitle]}>
-                      {city}
-                    </Text>
-                  </Pressable>
+                  <Text style={styles.cityTitle}>{city}</Text>
 
                   <View style={styles.statsGrid}>
-                    {Object.entries(types)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([type, count]) => {
-                        const active = selectedCity === city && selectedType === type;
-
-                        return (
-                          <Pressable
-                            key={`${city}-${type}`}
-                            style={[styles.statChip, active && styles.activeChip]}
-                            onPress={() => {
-                              setSelectedCity(city);
-                              setSelectedType(type);
-                            }}
-                          >
-                            <Text style={[styles.statChipText, active && styles.activeChipText]}>
-                              {type} ({count})
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
+                    {Object.entries(types).map(([type, count]) => (
+                      <View key={`${city}-${type}`} style={styles.statChip}>
+                        <Text style={styles.statChipText}>
+                          {type} ({count})
+                        </Text>
+                      </View>
+                    ))}
                   </View>
                 </View>
               ))}
             </View>
 
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleMobile]}>
-                💎 Biens sponsorisés
+              <Text style={styles.sectionTitle}>💎 Biens sponsorisés</Text>
+              <Text style={styles.sectionSub}>
+                Les annonces boostées apparaissent ici en priorité
               </Text>
-              <Text style={styles.sectionSub}>Les annonces boostées apparaissent ici en priorité</Text>
             </View>
 
-            <SponsoredSlider
+            <HomePropertyGrid
               items={sponsoredProperties}
               onOpenProperty={onOpenProperty}
               onBoostProperty={onBoostProperty}
             />
 
-            {hasFilter ? (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleMobile]}>
-                    Résultats
-                  </Text>
-                  <Text style={styles.sectionSub}>Les biens boostés restent affichés en premier</Text>
-                </View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🔥 Biens boostés</Text>
+              <Text style={styles.sectionSub}>
+                Visibilité premium pour les annonces sponsorisées
+              </Text>
+            </View>
 
-                {filteredProperties.length > 0 ? renderGrid(filteredProperties) : <Text style={styles.empty}>Aucun bien trouvé.</Text>}
-              </>
-            ) : (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleMobile]}>
-                    🔥 Biens boostés
-                  </Text>
-                  <Text style={styles.sectionSub}>Visibilité premium pour les annonces sponsorisées</Text>
-                </View>
+            <HomePropertyGrid
+              items={boostedProperties}
+              onOpenProperty={onOpenProperty}
+              onBoostProperty={onBoostProperty}
+            />
 
-                {boostedProperties.length > 0 ? renderGrid(boostedProperties) : <Text style={styles.empty}>Aucun bien boosté pour le moment.</Text>}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🆕 Annonces récentes</Text>
+              <Text style={styles.sectionSub}>
+                Les annonces premium sont toujours prioritaires
+              </Text>
+            </View>
 
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleMobile]}>
-                    🆕 Annonces récentes
-                  </Text>
-                  <Text style={styles.sectionSub}>Les annonces premium sont toujours prioritaires</Text>
-                </View>
+            <HomePropertyGrid
+              items={filteredProperties}
+              onOpenProperty={onOpenProperty}
+              onBoostProperty={onBoostProperty}
+            />
 
-                {allProperties.length > 0 ? renderGrid(allProperties) : <Text style={styles.empty}>Aucune annonce disponible.</Text>}
-              </>
-            )}
+            <SecurityNotice />
           </View>
 
           {showSidebar && (
@@ -530,56 +420,34 @@ export function HomeScreen({
 
               <View style={styles.sideAdImage}>
                 <Text style={styles.sideAdImageTitle}>Espace annonce</Text>
-                <Text style={styles.sideAdImageText}>Bannières agences / promoteurs</Text>
+                <Text style={styles.sideAdImageText}>
+                  Bannières agences / promoteurs
+                </Text>
               </View>
             </View>
           )}
         </View>
 
-        <SecurityNotice />
-      </ScrollView>
+              </ScrollView>
 
-      <Modal visible={filterOpen} transparent animationType="fade">
+      <AppFooter />
+
+      <Modal
+        visible={filterOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterOpen(false)}
+      >
         <View style={styles.modalOverlay}>
-          <View style={[styles.filterModal, isPhone && styles.filterModalMobile]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, isPhone && styles.modalTitleMobile]}>
-                Filtres avancés
-              </Text>
+          <View style={styles.filterModal}>
+            <Text style={styles.modalTitle}>Filtres avancés</Text>
 
-              <Pressable onPress={() => setFilterOpen(false)}>
-                <Text style={styles.closeText}>×</Text>
-              </Pressable>
-            </View>
-
-            <Text style={styles.modalSub}>
-              Affine ta recherche par ville, quartier, prix et surface.
-            </Text>
-
-            <View style={[styles.modalRow, isPhone && styles.modalRowMobile]}>
-              <TextInput style={styles.modalInput} placeholder="Ville" value={filterCity} onChangeText={setFilterCity} />
-              <TextInput style={styles.modalInput} placeholder="Quartier" value={filterQuartier} onChangeText={setFilterQuartier} />
-            </View>
-
-            <View style={[styles.modalRow, isPhone && styles.modalRowMobile]}>
-              <TextInput style={styles.modalInput} placeholder="Prix minimum" value={filterMinPrice} onChangeText={setFilterMinPrice} keyboardType="numeric" />
-              <TextInput style={styles.modalInput} placeholder="Prix maximum" value={filterMaxPrice} onChangeText={setFilterMaxPrice} keyboardType="numeric" />
-            </View>
-
-            <View style={[styles.modalRow, isPhone && styles.modalRowMobile]}>
-              <TextInput style={styles.modalInput} placeholder="M² minimum" value={filterMinSurface} onChangeText={setFilterMinSurface} keyboardType="numeric" />
-              <TextInput style={styles.modalInput} placeholder="M² maximum" value={filterMaxSurface} onChangeText={setFilterMaxSurface} keyboardType="numeric" />
-            </View>
-
-            <View style={[styles.modalActions, isPhone && styles.modalActionsMobile]}>
-              <Pressable style={styles.resetButton} onPress={clearFilters}>
-                <Text style={styles.resetText}>Réinitialiser</Text>
-              </Pressable>
-
-              <Pressable style={styles.applyButton} onPress={applyFilters}>
-                <Text style={styles.applyText}>Appliquer les filtres</Text>
-              </Pressable>
-            </View>
+            <Pressable
+              style={styles.applyButton}
+              onPress={() => setFilterOpen(false)}
+            >
+              <Text style={styles.applyText}>Fermer</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -588,110 +456,112 @@ export function HomeScreen({
 }
 
 const styles = StyleSheet.create({
-  bg: { flex: 1 },
-  container: { flex: 1, backgroundColor: "transparent" },
+  bg: {
+    flex: 1,
+  },
 
-  hero: { minHeight: 520, borderRadius: 32, overflow: "hidden", marginBottom: 24 },
-  heroMobile: { minHeight: 420, borderRadius: 22, marginBottom: 16 },
+  container: {
+    flex: 1,
+  },
 
-  heroImage: { borderRadius: 32 },
-  heroImageMobile: { borderRadius: 22 },
+  hero: {
+    height: 340,
+    borderRadius: 22,
+    overflow: "hidden",
+    marginBottom: 18,
+  },
+
+  heroMobile: {
+    height: 360,
+    borderRadius: 20,
+  },
+
+  heroImage: {
+    borderRadius: 22,
+  },
 
   heroOverlay: {
     flex: 1,
-    backgroundColor: "rgba(6,37,26,0.58)",
-    padding: 32,
+    backgroundColor: "rgba(6,37,26,0.50)",
     justifyContent: "center",
+    padding: 22,
   },
 
-  heroOverlayMobile: {
-    padding: 14,
-    justifyContent: "flex-start",
+  heroContent: {
+    width: "100%",
+    maxWidth: 760,
   },
-
-  heroContent: { maxWidth: 980 },
 
   kicker: {
     color: "#F0D77A",
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "900",
-    marginBottom: 14,
+    marginBottom: 8,
   },
 
   kickerMobile: {
-    fontSize: 13,
-    marginBottom: 8,
-    marginTop: 8,
+    fontSize: 12,
   },
 
   heroTitle: {
-    color: "white",
-    fontSize: 42,
-    lineHeight: 48,
+    color: "#FFFFFF",
+    fontSize: 32,
+    lineHeight: 38,
     fontWeight: "900",
   },
 
   heroTitleMobile: {
     fontSize: 24,
-    lineHeight: 29,
+    lineHeight: 30,
   },
 
   heroSubtitle: {
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 18,
-    marginTop: 12,
-    lineHeight: 28,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 16,
+    marginTop: 10,
+    marginBottom: 20,
     fontWeight: "700",
   },
 
   heroSubtitleMobile: {
     fontSize: 13,
-    lineHeight: 18,
-    marginTop: 8,
+    marginBottom: 14,
   },
 
   searchPanel: {
-    backgroundColor: "rgba(255,255,255,0.86)",
-    borderRadius: 26,
-    padding: 18,
-    marginTop: 30,
-    maxWidth: 980,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.7)",
+    width: "100%",
+    maxWidth: 680,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderRadius: 20,
+    padding: 12,
   },
 
   searchPanelMobile: {
-    padding: 12,
     borderRadius: 18,
-    marginTop: 18,
+    padding: 12,
   },
 
   segmentRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 12,
     flexWrap: "wrap",
   },
 
-  segmentRowDesktop: {
-    alignItems: "center",
-  },
-
   segment: {
-    backgroundColor: "rgba(245,246,245,0.92)",
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 16,
+    backgroundColor: "#F3F4F3",
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 14,
   },
 
   segmentMobile: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 12,
   },
 
   segmentActive: {
-    backgroundColor: "rgba(234,244,239,0.95)",
+    backgroundColor: "#EAF4EF",
     borderWidth: 1,
     borderColor: "#1F5C42",
   },
@@ -699,102 +569,79 @@ const styles = StyleSheet.create({
   segmentText: {
     color: "#1D2E26",
     fontWeight: "900",
-    fontSize: 15,
+    fontSize: 14,
   },
 
-  segmentTextMobile: { fontSize: 12 },
-  segmentTextActive: { color: "#1F5C42" },
+  segmentTextMobile: {
+    fontSize: 12,
+  },
+
+  segmentTextActive: {
+    color: "#1F5C42",
+  },
 
   filterButton: {
-    backgroundColor: "rgba(255,255,255,0.95)",
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E3EAE6",
-  },
-
-  filterButtonDesktop: {
     marginLeft: "auto",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 14,
   },
 
   filterButtonMobile: {
+    marginLeft: 0,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-
-  filterButtonActive: {
-    borderColor: "#1F5C42",
-    backgroundColor: "#EAF4EF",
   },
 
   filterButtonText: {
     color: "#1D2E26",
     fontWeight: "900",
-    fontSize: 15,
+    fontSize: 14,
   },
 
-  filterButtonTextMobile: { fontSize: 12 },
-  filterButtonTextActive: { color: "#1F5C42" },
-
   searchInput: {
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderWidth: 1,
-    borderColor: "#E3EAE6",
-    borderRadius: 18,
-    padding: 17,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 13,
     fontWeight: "800",
-    fontSize: 16,
+    fontSize: 14,
+    marginBottom: 12,
   },
 
   searchInputMobile: {
-    borderRadius: 16,
-    padding: 13,
-    fontSize: 14,
+    padding: 12,
+    fontSize: 13,
   },
 
   searchActions: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 14,
+    gap: 10,
   },
 
   searchActionsMobile: {
-    flexDirection: "row",
     gap: 8,
-    marginTop: 10,
   },
 
   searchButton: {
     flex: 1,
     backgroundColor: "#1F5C42",
-    padding: 17,
-    borderRadius: 18,
-    alignItems: "center",
-  },
-
-  searchButtonMobile: {
     padding: 13,
-    borderRadius: 14,
-  },
-
-  searchButtonText: {
-    color: "white",
-    fontWeight: "900",
+    borderRadius: 16,
+    alignItems: "center",
   },
 
   publishButton: {
     flex: 1,
     backgroundColor: "#F0D77A",
-    padding: 17,
-    borderRadius: 18,
+    padding: 13,
+    borderRadius: 16,
     alignItems: "center",
   },
 
-  publishButtonMobile: {
-    padding: 13,
-    borderRadius: 14,
+  searchButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "900",
   },
 
   publishText: {
@@ -802,12 +649,13 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  buttonTextMobile: { fontSize: 12 },
-
   pageLayout: {
+    width: "100%",
+    maxWidth: 1450,
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 22,
+    gap: 16,
   },
 
   pageLayoutSingle: {
@@ -817,149 +665,41 @@ const styles = StyleSheet.create({
   mainColumn: {
     flex: 1,
     minWidth: 0,
-    maxWidth: 1080,
   },
 
   sidebar: {
-    width: 330,
-    gap: 16,
-  },
-
-  sideAdGreen: {
-    backgroundColor: "#1F5C42",
-    borderRadius: 18,
-    padding: 18,
-  },
-
-  sideAdLabel: {
-    color: "#F0D77A",
-    fontSize: 12,
-    fontWeight: "900",
-    marginBottom: 8,
-  },
-
-  sideAdTitle: {
-    color: "white",
-    fontSize: 21,
-    fontWeight: "900",
-    marginBottom: 8,
-  },
-
-  sideAdText: {
-    color: "rgba(255,255,255,0.88)",
-    fontWeight: "700",
-    lineHeight: 21,
-  },
-
-  sideAdButton: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 13,
-    alignItems: "center",
-    marginTop: 14,
-  },
-
-  sideAdButtonText: {
-    color: "#1F5C42",
-    fontWeight: "900",
-  },
-
-  sideBox: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E3EAE6",
-  },
-
-  sideBoxTitle: {
-    color: "#06251A",
-    fontSize: 17,
-    fontWeight: "900",
-    marginBottom: 12,
-  },
-
-  sideLink: {
-    color: "#51635A",
-    fontWeight: "800",
-    marginBottom: 10,
-  },
-
-  sideAdImage: {
-    height: 360,
-    backgroundColor: "#EDF3EF",
-    borderRadius: 18,
-    padding: 18,
-    justifyContent: "flex-end",
-    borderWidth: 1,
-    borderColor: "#E3EAE6",
-  },
-
-  sideAdImageTitle: {
-    color: "#06251A",
-    fontSize: 22,
-    fontWeight: "900",
-  },
-
-  sideAdImageText: {
-    color: "#51635A",
-    fontWeight: "800",
-    marginTop: 6,
-  },
-
-  statsContainer: {
-    backgroundColor: "rgba(255,255,255,0.78)",
-    padding: 16,
-    borderRadius: 22,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "rgba(227,234,230,0.95)",
-  },
-
-  statsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 14,
+    width: 260,
     gap: 12,
   },
 
-  statsHeaderMobile: {
-    flexDirection: "column",
+  statsContainer: {
+    backgroundColor: "rgba(255,255,255,0.90)",
+    padding: 14,
+    borderRadius: 18,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E3EAE6",
   },
 
   statsTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "900",
     color: "#06251A",
-  },
-
-  statsTitleMobile: {
-    fontSize: 19,
-  },
-
-  clearText: {
-    color: "#1F5C42",
-    fontWeight: "900",
+    marginBottom: 10,
   },
 
   cityCard: {
-    backgroundColor: "rgba(246,248,247,0.78)",
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: "#F7F8F6",
+    borderRadius: 14,
+    padding: 12,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "rgba(227,234,230,0.75)",
   },
 
   cityTitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#06251A",
     fontWeight: "900",
-    marginBottom: 10,
-  },
-
-  activeCityTitle: {
-    color: "#1F5C42",
+    marginBottom: 8,
   },
 
   statsGrid: {
@@ -969,72 +709,123 @@ const styles = StyleSheet.create({
   },
 
   statChip: {
-    backgroundColor: "rgba(255,255,255,0.92)",
-    paddingVertical: 9,
-    paddingHorizontal: 13,
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 7,
+    paddingHorizontal: 11,
     borderRadius: 999,
-  },
-
-  activeChip: {
-    backgroundColor: "#1F5C42",
   },
 
   statChipText: {
     color: "#06251A",
     fontWeight: "900",
-  },
-
-  activeChipText: {
-    color: "white",
+    fontSize: 12,
   },
 
   sectionHeader: {
-    marginTop: 10,
-    marginBottom: 16,
+    marginBottom: 12,
   },
 
   sectionTitle: {
-    fontSize: 31,
+    fontSize: 24,
     fontWeight: "900",
     color: "#06251A",
-  },
-
-  sectionTitleMobile: {
-    fontSize: 26,
   },
 
   sectionSub: {
     color: "#51635A",
     fontWeight: "800",
-    marginTop: 5,
-    fontSize: 15,
+    marginTop: 4,
+    fontSize: 13,
   },
 
-  grid: {
-    flexDirection: "column",
-    alignItems: "stretch",
-    marginBottom: 26,
+  sideAdGreen: {
+    backgroundColor: "#1F5C42",
+    borderRadius: 16,
+    padding: 14,
   },
 
-  gridItem: {
-    width: "100%",
-    maxWidth: 1080,
+  sideAdLabel: {
+    color: "#F0D77A",
+    fontSize: 11,
+    fontWeight: "900",
+    marginBottom: 6,
   },
 
-  empty: {
-    backgroundColor: "rgba(255,255,255,0.82)",
-    padding: 18,
-    borderRadius: 18,
-    color: "#555",
-    fontWeight: "800",
-    marginBottom: 12,
+  sideAdTitle: {
+    color: "white",
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: "900",
+    marginBottom: 6,
+  },
+
+  sideAdText: {
+    color: "rgba(255,255,255,0.88)",
+    fontWeight: "700",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  sideAdButton: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 10,
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  sideAdButtonText: {
+    color: "#1F5C42",
+    fontWeight: "900",
+    fontSize: 13,
+  },
+
+  sideBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(227,234,230,0.8)",
+    borderColor: "#E3EAE6",
+  },
+
+  sideBoxTitle: {
+    color: "#06251A",
+    fontSize: 16,
+    fontWeight: "900",
+    marginBottom: 10,
+  },
+
+  sideLink: {
+    color: "#51635A",
+    fontWeight: "800",
+    marginBottom: 8,
+    fontSize: 13,
+  },
+
+  sideAdImage: {
+    height: 210,
+    backgroundColor: "#EDF3EF",
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: "flex-end",
+  },
+
+  sideAdImageTitle: {
+    color: "#06251A",
+    fontSize: 18,
+    fontWeight: "900",
+  },
+
+  sideAdImageText: {
+    color: "#51635A",
+    fontWeight: "800",
+    marginTop: 4,
+    fontSize: 12,
   },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(6,37,26,0.45)",
+    backgroundColor: "rgba(6,37,26,0.55)",
     justifyContent: "center",
     alignItems: "center",
     padding: 18,
@@ -1042,104 +833,28 @@ const styles = StyleSheet.create({
 
   filterModal: {
     width: "100%",
-    maxWidth: 720,
+    maxWidth: 420,
     backgroundColor: "#FFFFFF",
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: "#E3EAE6",
-  },
-
-  filterModalMobile: {
-    padding: 18,
     borderRadius: 22,
-  },
-
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    padding: 20,
   },
 
   modalTitle: {
     color: "#06251A",
-    fontSize: 26,
-    fontWeight: "900",
-  },
-
-  modalTitleMobile: {
     fontSize: 22,
-  },
-
-  closeText: {
-    color: "#A84A3A",
-    fontSize: 32,
     fontWeight: "900",
-  },
-
-  modalSub: {
-    color: "#51635A",
-    fontWeight: "700",
-    marginTop: 6,
-    marginBottom: 18,
-  },
-
-  modalRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 12,
-  },
-
-  modalRowMobile: {
-    flexDirection: "column",
-  },
-
-  modalInput: {
-    flex: 1,
-    backgroundColor: "#F7F8F6",
-    borderWidth: 1,
-    borderColor: "#E3EAE6",
-    borderRadius: 16,
-    padding: 15,
-    fontWeight: "800",
-    color: "#06251A",
-  },
-
-  modalActions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-
-  modalActionsMobile: {
-    flexDirection: "column",
-  },
-
-  resetButton: {
-    flex: 1,
-    backgroundColor: "#F7F8F6",
-    borderWidth: 1,
-    borderColor: "#E3EAE6",
-    padding: 16,
-    borderRadius: 16,
-    alignItems: "center",
-  },
-
-  resetText: {
-    color: "#1F5C42",
-    fontWeight: "900",
+    marginBottom: 16,
   },
 
   applyButton: {
-    flex: 2,
     backgroundColor: "#1F5C42",
-    padding: 16,
+    paddingVertical: 14,
     borderRadius: 16,
     alignItems: "center",
   },
 
   applyText: {
-    color: "white",
+    color: "#FFFFFF",
     fontWeight: "900",
   },
 });

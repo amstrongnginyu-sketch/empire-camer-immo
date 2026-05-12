@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { PropertyCard } from "./PropertyCard";
+import { PropertyCard } from "../components/property/PropertyCard";
 
 type Props = {
   items: any[];

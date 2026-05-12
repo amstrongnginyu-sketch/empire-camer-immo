@@ -1,9 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
 
-export function SecurityNotice() {
+function SecurityNotice() {
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.title}>🔒 Sécurité & protection des utilisateurs</Text>
+      <Text style={styles.title}>
+        🔒 Sécurité & protection des utilisateurs
+      </Text>
 
       <Text style={styles.brand}>EMPIRE CAMER IMMO</Text>
 
@@ -20,19 +22,36 @@ export function SecurityNotice() {
 
       <View style={styles.rulesBox}>
         <Text style={styles.rulesTitle}>Avant tout paiement :</Text>
-        <Text style={styles.rule}>• Visitez physiquement le bien</Text>
-        <Text style={styles.rule}>• Vérifiez l’identité du vendeur</Text>
-        <Text style={styles.rule}>• Confirmez les documents du bien</Text>
-        <Text style={styles.rule}>• Ne partagez jamais votre code Mobile Money</Text>
-        <Text style={styles.rule}>• Signalez toute annonce suspecte</Text>
+
+        <Text style={styles.rule}>
+          • Visitez physiquement le bien
+        </Text>
+
+        <Text style={styles.rule}>
+          • Vérifiez l’identité du vendeur
+        </Text>
+
+        <Text style={styles.rule}>
+          • Confirmez les documents du bien
+        </Text>
+
+        <Text style={styles.rule}>
+          • Ne partagez jamais votre code Mobile Money
+        </Text>
+
+        <Text style={styles.rule}>
+          • Signalez toute annonce suspecte
+        </Text>
       </View>
 
       <Text style={styles.footer}>
-        Ne payez jamais et n’effectuez aucun transfert avant vérification complète.
+        Ne payez jamais avant vérification complète.
       </Text>
     </View>
   );
 }
+
+export default SecurityNotice;
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -43,10 +62,6 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 1,
     borderColor: "#E3EAE6",
-    shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
   },
 
   title: {

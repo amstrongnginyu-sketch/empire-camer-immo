@@ -47,6 +47,7 @@ export function AppHeader({
 }: Props) {
   const { width } = useWindowDimensions();
   const isPhone = width < 700;
+  const isTablet = width >= 700 && width < 1024;
 
   const [favoriteCount, setFavoriteCount] = useState(0);
 
@@ -65,47 +66,57 @@ export function AppHeader({
       <View style={styles.wrapper}>
         <View style={[styles.flagBar, isPhone && styles.flagBarMobile]}>
           <View style={styles.flagGreen} />
+
           <View style={styles.flagRed}>
             <Text style={styles.star}>★</Text>
           </View>
+
           <View style={styles.flagGold} />
         </View>
 
         <View style={[styles.header, isPhone && styles.headerMobile]}>
-          <Pressable style={[styles.logoBox, isPhone && styles.logoBoxMobile]} onPress={onHome}>
+          <Pressable
+            style={[styles.logoBox, isPhone && styles.logoBoxMobile]}
+            onPress={onHome}
+          >
             <Text style={[styles.logo, isPhone && styles.logoMobile]}>
               EMPIRE <Text style={styles.logoGold}>CAMER IMMO</Text>
             </Text>
-            <Text style={[styles.slogan, isPhone && styles.sloganMobile]}>
-              ICI C’EST LE CONTINENT.
-            </Text>
+
+            {!isPhone && (
+              <Text style={styles.slogan}>ICI C’EST LE CONTINENT.</Text>
+            )}
           </Pressable>
 
-          {!isPhone && (
+          {!isPhone && !isTablet && (
             <View style={styles.adZone}>
               <Text style={styles.adLabel}>ESPACE PUBLICITAIRE PREMIUM</Text>
-              <Text style={styles.adText}>
+              <Text style={styles.adText} numberOfLines={1}>
                 Annonce sponsorisée • rotation automatique • agences partenaires
               </Text>
             </View>
           )}
 
           <View style={[styles.rightBox, isPhone && styles.rightBoxMobile]}>
-            <Pressable style={[styles.favButton, isPhone && styles.iconButtonMobile]} onPress={onFavorites}>
+            <Pressable
+              style={[styles.favButton, isPhone && styles.iconButtonMobile]}
+              onPress={onFavorites}
+            >
               <Text style={[styles.favText, isPhone && styles.mobileIconText]}>
-                ❤️{!isPhone ? ` Favoris ${favoriteCount > 0 ? `(${favoriteCount})` : ""}` : ""}
+                ❤️ {!isPhone && favoriteCount > 0 ? `(${favoriteCount})` : ""}
               </Text>
             </Pressable>
 
-            {isAdmin && (
-              <Pressable style={[styles.adminButton, isPhone && styles.smallButtonMobile]} onPress={onAdmin}>
-                <Text style={[styles.adminText, isPhone && styles.smallTextMobile]}>
-                  Admin
-                </Text>
+            {isAdmin && !isPhone && (
+              <Pressable style={styles.adminButton} onPress={onAdmin}>
+                <Text style={styles.adminText}>Admin</Text>
               </Pressable>
             )}
 
-            <Pressable style={[styles.publishButton, isPhone && styles.smallButtonMobile]} onPress={onPublish}>
+            <Pressable
+              style={[styles.publishButton, isPhone && styles.smallButtonMobile]}
+              onPress={onPublish}
+            >
               <Text style={[styles.publishText, isPhone && styles.smallTextMobile]}>
                 Publier
               </Text>
@@ -113,10 +124,6 @@ export function AppHeader({
 
             {isLoggedIn ? (
               <View style={[styles.accountBox, isPhone && styles.accountBoxMobile]}>
-                <Text style={[styles.loginTitle, isPhone && styles.accountTextMobile]}>
-                  Connecté
-                </Text>
-
                 {!isPhone && (
                   <Text style={styles.emailText} numberOfLines={1}>
                     {userEmail || "Utilisateur"}
@@ -130,13 +137,14 @@ export function AppHeader({
                 </Pressable>
               </View>
             ) : (
-              <View style={[styles.accountBox, isPhone && styles.accountBoxMobile]}>
-                <Pressable onPress={onLogin}>
-                  <Text style={[styles.loginTitle, isPhone && styles.accountTextMobile]}>
-                    Login
-                  </Text>
-                </Pressable>
-              </View>
+              <Pressable
+                style={[styles.loginButton, isPhone && styles.smallButtonMobile]}
+                onPress={onLogin}
+              >
+                <Text style={[styles.loginText, isPhone && styles.smallTextMobile]}>
+                  Login
+                </Text>
+              </Pressable>
             )}
           </View>
         </View>
@@ -145,30 +153,28 @@ export function AppHeader({
   );
 }
 
+export default AppHeader;
+
 const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: "#FFFFFF",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 24 : 0,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0,
   },
 
   wrapper: {
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#EDE6D6",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
     zIndex: 100,
   },
 
   flagBar: {
-    height: 20,
+    height: 6,
     flexDirection: "row",
   },
 
   flagBarMobile: {
-    height: 6,
+    height: 4,
   },
 
   flagGreen: {
@@ -195,23 +201,23 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    minHeight: 90,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
+    minHeight: 58,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: 20,
+    gap: 12,
   },
 
   headerMobile: {
-    minHeight: 56,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
+    minHeight: 48,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
   },
 
   logoBox: {
-    minWidth: 260,
+    minWidth: 180,
   },
 
   logoBoxMobile: {
@@ -220,13 +226,13 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    fontSize: 24,
+    fontSize: 17,
     fontWeight: "900",
     color: "#1F5C42",
   },
 
   logoMobile: {
-    fontSize: 15,
+    fontSize: 13,
   },
 
   logoGold: {
@@ -234,71 +240,64 @@ const styles = StyleSheet.create({
   },
 
   slogan: {
-    marginTop: 4,
-    fontSize: 12,
+    marginTop: 2,
+    fontSize: 9,
     fontWeight: "800",
     color: "#6B6B5F",
-    letterSpacing: 1,
-  },
-
-  sloganMobile: {
-    marginTop: 1,
-    fontSize: 8,
-    letterSpacing: 0.7,
+    letterSpacing: 0.8,
   },
 
   adZone: {
     flex: 1,
+    maxWidth: 860,
     backgroundColor: "#F7F4EC",
     borderWidth: 1,
     borderColor: "#EDE6D6",
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 22,
+    borderRadius: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     alignItems: "center",
     justifyContent: "center",
   },
 
   adLabel: {
     color: "#1F5C42",
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: "900",
   },
 
   adText: {
     color: "#6B6B5F",
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: "700",
-    marginTop: 4,
+    marginTop: 2,
     textAlign: "center",
   },
 
   rightBox: {
-    minWidth: 320,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 12,
+    gap: 8,
   },
 
   rightBoxMobile: {
-    minWidth: 0,
     gap: 5,
   },
 
   favButton: {
     backgroundColor: "#FFF0F3",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 10,
   },
 
   iconButtonMobile: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     paddingVertical: 0,
     paddingHorizontal: 0,
-    borderRadius: 16,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -306,40 +305,42 @@ const styles = StyleSheet.create({
   favText: {
     color: "#A84A3A",
     fontWeight: "900",
+    fontSize: 12,
   },
 
   mobileIconText: {
-    fontSize: 15,
+    fontSize: 13,
   },
 
   adminButton: {
     backgroundColor: "#EAF4EF",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 10,
   },
 
   adminText: {
     color: "#1F5C42",
     fontWeight: "900",
+    fontSize: 12,
   },
 
   publishButton: {
     backgroundColor: "#1F5C42",
-    paddingVertical: 12,
-    paddingHorizontal: 22,
-    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+    borderRadius: 12,
   },
 
   smallButtonMobile: {
-    paddingVertical: 8,
-    paddingHorizontal: 9,
-    borderRadius: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderRadius: 12,
   },
 
   publishText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "900",
   },
 
@@ -347,33 +348,37 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
+  loginButton: {
+    backgroundColor: "#EAF4EF",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+
+  loginText: {
+    color: "#1F5C42",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
   accountBox: {
-    alignItems: "flex-start",
-    maxWidth: 160,
+    maxWidth: 150,
   },
 
   accountBoxMobile: {
-    maxWidth: 38,
-  },
-
-  loginTitle: {
-    color: "#1F5C42",
-    fontSize: 13,
-    fontWeight: "900",
+    maxWidth: 34,
   },
 
   emailText: {
     color: "#C9A646",
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "900",
-    marginTop: 2,
   },
 
   logoutText: {
     color: "#A84A3A",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "900",
-    marginTop: 2,
   },
 
   accountTextMobile: {
